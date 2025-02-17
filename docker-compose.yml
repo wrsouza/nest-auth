@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=nest-prisma
+    restart: always
+    volumes:
+      - mydata:/var/lib/postgresql/data
+
+volumes:
+  mydata:
