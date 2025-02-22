@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { RolesService } from './roles.service';
 import {
@@ -24,10 +25,11 @@ import {
   RoleResponseDto,
   RolePermissionsDto,
 } from './dtos';
-import { Roles } from '../../../common';
+import { AuthGuard, Roles } from '../../../common';
 
 @ApiTags('Roles')
 @ApiBearerAuth()
+@UseGuards(AuthGuard)
 @Controller('roles')
 export class RolesController {
   constructor(private readonly service: RolesService) {}

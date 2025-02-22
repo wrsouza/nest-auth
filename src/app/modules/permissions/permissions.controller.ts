@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { PermissionsService } from './permissions.service';
 import {
@@ -23,10 +24,11 @@ import {
   PermissionUpdateDto,
   PermissionResponse,
 } from './dtos';
-import { Roles } from '../../../common';
+import { AuthGuard, Roles } from '../../../common';
 
 @ApiTags('Permissions')
 @ApiBearerAuth()
+@UseGuards(AuthGuard)
 @Controller('permissions')
 export class PermissionsController {
   constructor(private readonly service: PermissionsService) {}

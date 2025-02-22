@@ -14,8 +14,14 @@ import {
   ApiOperation,
   ApiResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { AuthSignInDto, AuthResponseDto, AuthPayloadDto } from './dto';
+import {
+  AuthSignInDto,
+  AuthResponseDto,
+  AuthPayloadDto,
+  AuthPayloadUserDto,
+} from './dto';
 import { AuthGuard } from '../../../common';
 
 @ApiTags('Auth')
@@ -26,6 +32,9 @@ export class AuthController {
   @Get()
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get user profile' })
+  @ApiResponse({ status: 200, type: AuthPayloadUserDto })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   getProfile(@Request() req: AuthPayloadDto) {
     return req.user;
   }
