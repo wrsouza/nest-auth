@@ -6,8 +6,8 @@ import { Permission, Prisma } from '@prisma/client';
 export class PermissionRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(): Promise<Permission[]> {
-    return this.prisma.permission.findMany();
+  async findAll(where?: Prisma.PermissionWhereInput): Promise<Permission[]> {
+    return this.prisma.permission.findMany({ where });
   }
 
   async findOne(

@@ -34,7 +34,7 @@ export class UserRepository {
   async disconectRoles(
     where: Prisma.UserWhereUniqueInput,
     roles: Role[],
-  ): Promise<User> {
+  ): Promise<User & { roles: Role[] }> {
     return this.prisma.user.update({
       where,
       data: {

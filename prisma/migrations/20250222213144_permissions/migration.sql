@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE "permissions" (
-    "id" TEXT NOT NULL,
+    "id" VARCHAR(36) NOT NULL,
     "name" VARCHAR(50) NOT NULL,
     "description" VARCHAR(255) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

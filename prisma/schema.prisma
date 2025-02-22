@@ -14,7 +14,7 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(uuid())
+  id        String    @db.VarChar(36) @id @default(uuid())
   name      String    @db.VarChar(100)
   email     String    @db.VarChar(255) @unique
   password  String    @db.VarChar(255)
@@ -27,7 +27,7 @@ model User {
 }
 
 model Permission {
-  id          String    @id @default(uuid())
+  id          String    @db.VarChar(36) @id @default(uuid())
   name        String    @db.VarChar(50) @unique
   description String    @db.VarChar(255)
   createdAt   DateTime  @default(now())
@@ -37,7 +37,7 @@ model Permission {
 }
 
 model Role {
-  id          String    @id @default(uuid())
+  id          String    @db.VarChar(36) @id @default(uuid())
   name        String    @db.VarChar(50) @unique
   description String    @db.VarChar(255)
   createdAt   DateTime  @default(now())
@@ -46,23 +46,3 @@ model Role {
   users       User[] @relation("user_role")
   @@map("roles")
 }
-
-/*
-model RoleInPermission {
-  roleId        String      @db.VarChar(36) @map("role_id")
-  permissionId  String      @db.VarChar(36) @map("permission_id")
-  role          Role        @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission    Permission  @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-  @@unique([roleId, permissionId], map: "role_id_permission_id_unique")
-  @@map("role_permission")
-}
-
-model UserInRole {
-  userId  String  @db.VarChar(36) @map("user_id")
-  roleId  String  @db.VarChar(36) @map("role_id")
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role    Role    @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  @@unique([userId, roleId], map: "user_id_role_id_unique")
-  @@map("user_role")
-}
-*/

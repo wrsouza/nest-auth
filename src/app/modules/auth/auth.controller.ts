@@ -26,8 +26,8 @@ export class AuthController {
   @Get()
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
-  async getProfile(@Request() req: AuthPayloadDto) {
-    return this.authService.getProfile(req.user);
+  getProfile(@Request() req: AuthPayloadDto) {
+    return req.user;
   }
 
   @Post()

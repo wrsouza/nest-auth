@@ -7,6 +7,8 @@ import {
   RolesModule,
   PermissionsModule,
 } from './app/modules';
+import { GlobalJwtModule } from './common';
+import { DatabaseModule } from './config';
 
 @Module({
   imports: [
@@ -17,6 +19,8 @@ import {
         JWT_SECRET: Joi.string().required(),
       }),
     }),
+    DatabaseModule,
+    GlobalJwtModule,
     AuthModule,
     UsersModule,
     RolesModule,

@@ -1,13 +1,10 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { UserRepository } from '../../repositories';
 import { BcryptService } from '../../../common/bcrypt/bcrypt.service';
 import { AuthSignInDto, AuthResponseDto, AuthPayloadUserDto } from './dto';
 import { ResponseErrorEnum } from '../../../common/enums/response-error.enum';
 import { JwtService } from '@nestjs/jwt';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -18,32 +15,28 @@ export class AuthService {
   ) {}
 
   async signIn(body: AuthSignInDto): Promise<AuthResponseDto> {
+    const user = await this.getUserByEmail(body.email);
+    this.checkPasswordIsValid(body.password, user.password);
+    const payload: AuthPayloadUserDto = { sub: user.id, email: user.email };
+    const accessToken = await this.jwt.signAsync(payload);
+    return new AuthResponseDto(user, accessToken);
+  }
+
+  private async getUserByEmail(email: string): Promise<User> {
     const user = await this.repository.findOne({
-      email: body.email,
+      email,
       isActive: true,
     });
     if (!user) {
       throw new BadRequestException(ResponseErrorEnum.AUTH_INVALID);
     }
+    return user;
+  }
 
-    const isValid = this.bcrypt.compare(body.password, user.password);
+  private checkPasswordIsValid(password: string, hashPassword: string) {
+    const isValid = this.bcrypt.compare(password, hashPassword);
     if (!isValid) {
       throw new BadRequestException(ResponseErrorEnum.AUTH_INVALID);
     }
-
-    const payload = { sub: user.id, email: user.email };
-    const accessToken = await this.jwt.signAsync(payload);
-
-    return new AuthResponseDto(user, accessToken);
-  }
-
-  async getProfile(payload: AuthPayloadUserDto) {
-    const user = await this.repository.findOne({ id: payload.sub });
-
-    if (!user) {
-      throw new NotFoundException(ResponseErrorEnum.USER_NOT_FOUND);
-    }
-
-    return new AuthResponseDto(user);
   }
 }

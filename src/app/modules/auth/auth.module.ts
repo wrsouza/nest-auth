@@ -2,25 +2,10 @@ import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { UserRepository } from '../../repositories';
-import { BcryptModule } from '../../../common/bcrypt/bcrypt.module';
-import { DatabaseModule } from '../../../config/database/database.module';
-import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { BcryptModule } from '../../../common';
 
 @Module({
-  imports: [
-    DatabaseModule,
-    BcryptModule,
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        global: true,
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '3600s' },
-      }),
-      inject: [ConfigService],
-    }),
-  ],
+  imports: [BcryptModule],
   controllers: [AuthController],
   providers: [AuthService, UserRepository],
 })

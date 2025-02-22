@@ -33,4 +33,34 @@ export class RoleRepository {
   async deleteOne(where: Prisma.RoleWhereUniqueInput): Promise<Role> {
     return this.prisma.role.delete({ where });
   }
+
+  async disconectPermissions(
+    where: Prisma.RoleWhereUniqueInput,
+    permissions: Permission[],
+  ): Promise<Role & { permissions: Permission[] }> {
+    return this.prisma.role.update({
+      where,
+      data: {
+        permissions: {
+          disconnect: permissions.map((permission) => ({ id: permission.id })),
+        },
+      },
+      include: { permissions: true },
+    });
+  }
+
+  async connectPermissions(
+    where: Prisma.RoleWhereUniqueInput,
+    permissions: string[],
+  ): Promise<Role & { permissions: Permission[] }> {
+    return this.prisma.role.update({
+      where,
+      data: {
+        permissions: {
+          connect: permissions.map((permission) => ({ id: permission })),
+        },
+      },
+      include: { permissions: true },
+    });
+  }
 }

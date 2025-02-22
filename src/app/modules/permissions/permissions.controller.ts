@@ -23,6 +23,7 @@ import {
   PermissionUpdateDto,
   PermissionResponse,
 } from './dtos';
+import { Roles } from '../../../common';
 
 @ApiTags('Permissions')
 @ApiBearerAuth()
@@ -31,6 +32,7 @@ export class PermissionsController {
   constructor(private readonly service: PermissionsService) {}
 
   @Get()
+  @Roles(['permissions:list'])
   @ApiOperation({ summary: 'Get all permissions' })
   @ApiResponse({ status: 200, type: PermissionResponse, isArray: true })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
@@ -39,6 +41,7 @@ export class PermissionsController {
   }
 
   @Post()
+  @Roles(['permissions:create'])
   @HttpCode(201)
   @ApiOperation({ summary: 'Create a permission' })
   @ApiResponse({ status: 201, type: PermissionResponse })
@@ -51,6 +54,7 @@ export class PermissionsController {
   }
 
   @Get(':id')
+  @Roles(['permissions:read'])
   @ApiOperation({ summary: 'Get a permission by id' })
   @ApiResponse({ status: 200, type: PermissionResponse })
   @ApiBadRequestResponse({ description: 'Validation Error' })
@@ -61,6 +65,7 @@ export class PermissionsController {
   }
 
   @Put(':id')
+  @Roles(['permissions:update'])
   @HttpCode(204)
   @ApiOperation({ summary: 'Update a permission by id' })
   @ApiResponse({ status: 200, type: PermissionResponse })
@@ -75,6 +80,7 @@ export class PermissionsController {
   }
 
   @Delete(':id')
+  @Roles(['permissions:delete'])
   @HttpCode(204)
   @ApiOperation({ summary: 'Delete a permission by id' })
   @ApiResponse({ status: 204, description: 'No Content' })

@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import {
@@ -24,14 +25,17 @@ import {
   UserResponseDto,
   UserRolesDto,
 } from './dtos';
+import { AuthGuard, Roles } from '../../../common';
 
 @ApiTags('Users')
 @ApiBearerAuth()
+@UseGuards(AuthGuard)
 @Controller('users')
 export class UsersController {
   constructor(private readonly service: UsersService) {}
 
   @Get()
+  @Roles(['users:list'])
   @ApiOperation({ summary: 'Get all users' })
   @ApiResponse({ status: 200, type: UserResponseDto, isArray: true })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
@@ -40,6 +44,7 @@ export class UsersController {
   }
 
   @Post()
+  @Roles(['users:create'])
   @HttpCode(201)
   @ApiOperation({ summary: 'Create a user' })
   @ApiResponse({ status: 201, type: UserResponseDto })
@@ -50,6 +55,7 @@ export class UsersController {
   }
 
   @Get(':id')
+  @Roles(['users:read'])
   @ApiOperation({ summary: 'Get a user by id' })
   @ApiResponse({ status: 200, type: UserResponseDto })
   @ApiBadRequestResponse({ description: 'Validation Error' })
@@ -60,6 +66,7 @@ export class UsersController {
   }
 
   @Put(':id')
+  @Roles(['users:update'])
   @ApiOperation({ summary: 'Update a user by id' })
   @ApiResponse({ status: 200, type: UserResponseDto })
   @ApiBadRequestResponse({ description: 'Validation Error' })
@@ -73,6 +80,7 @@ export class UsersController {
   }
 
   @Delete(':id')
+  @Roles(['users:delete'])
   @HttpCode(204)
   @ApiOperation({ summary: 'Delete a user by id' })
   @ApiResponse({ status: 204, description: 'No Content' })
@@ -83,7 +91,8 @@ export class UsersController {
   }
 
   @Put(':id/roles')
-  @ApiOperation({ summary: 'Update a user by id' })
+  @Roles(['users:roles'])
+  @ApiOperation({ summary: 'Connect many roles to one user' })
   @ApiResponse({ status: 200, type: UserResponseDto })
   @ApiBadRequestResponse({ description: 'Validation Error' })
   @ApiNotFoundResponse({ description: 'Not Found Error' })
