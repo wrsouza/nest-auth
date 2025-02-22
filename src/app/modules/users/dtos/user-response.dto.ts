@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { User } from '@prisma/client';
+import { User, Role } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 
 export class UserResponseDto {
@@ -45,7 +45,13 @@ export class UserResponseDto {
   })
   updatedAt: Date;
 
-  constructor(data: User) {
+  @ApiProperty({
+    type: [String],
+    example: [randomUUID()],
+  })
+  roles?: string[];
+
+  constructor(data: User & { roles?: Role[] }) {
     this.id = data.id;
     this.name = data.name;
     this.email = data.email;
@@ -53,5 +59,6 @@ export class UserResponseDto {
     this.isActive = data.isActive;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
+    this.roles = data.roles?.map((role: Role) => role.id);
   }
 }

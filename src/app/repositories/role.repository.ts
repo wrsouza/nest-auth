@@ -1,16 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../config/database/prisma.service';
-import { Role, Prisma } from '@prisma/client';
+import { Role, Prisma, Permission } from '@prisma/client';
 
 @Injectable()
 export class RoleRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(): Promise<Role[]> {
-    return this.prisma.role.findMany();
+  async findAll(where?: Prisma.RoleWhereInput): Promise<Role[]> {
+    return this.prisma.role.findMany({ where });
   }
 
-  async findOne(where: Prisma.RoleWhereUniqueInput): Promise<Role | null> {
+  async findOne(
+    where: Prisma.RoleWhereUniqueInput,
+  ): Promise<(Role & { permissions: Permission[] }) | null> {
     return this.prisma.role.findUnique({
       where,
       include: { permissions: true },

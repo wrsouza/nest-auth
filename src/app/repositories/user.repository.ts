@@ -1,16 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../config/database/prisma.service';
-import { Prisma, User } from '@prisma/client';
+import { Prisma, Role, User } from '@prisma/client';
 
 @Injectable()
 export class UserRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(): Promise<User[]> {
-    return this.prisma.user.findMany();
+  async findAll(where?: Prisma.UserWhereInput): Promise<User[]> {
+    return this.prisma.user.findMany({ where });
   }
 
-  async findOne(where: Prisma.UserWhereUniqueInput): Promise<User | null> {
+  async findOne(
+    where: Prisma.UserWhereUniqueInput,
+  ): Promise<(User & { roles: Role[] }) | null> {
     return this.prisma.user.findUnique({ where, include: { roles: true } });
   }
 
@@ -29,10 +31,33 @@ export class UserRepository {
     return this.prisma.user.delete({ where });
   }
 
-  async updateRoles(
+  async disconectRoles(
     where: Prisma.UserWhereUniqueInput,
-    data: Prisma.UserUpdateInput,
+    roles: Role[],
   ): Promise<User> {
-    return this.prisma.user.update({ where, data });
+    return this.prisma.user.update({
+      where,
+      data: {
+        roles: {
+          disconnect: roles.map((role) => ({ id: role.id })),
+        },
+      },
+      include: { roles: true },
+    });
+  }
+
+  async connectRoles(
+    where: Prisma.UserWhereUniqueInput,
+    roles: string[],
+  ): Promise<User & { roles: Role[] }> {
+    return this.prisma.user.update({
+      where,
+      data: {
+        roles: {
+          connect: roles.map((role) => ({ id: role })),
+        },
+      },
+      include: { roles: true },
+    });
   }
 }

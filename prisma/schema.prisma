@@ -22,7 +22,7 @@ model User {
   isActive  Boolean   @map("is_active")
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  roles     UserInRole[]
+  roles     Role[] @relation("user_role")
   @@map("users")
 }
 
@@ -32,7 +32,7 @@ model Permission {
   description String    @db.VarChar(255)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  roles       RoleInPermission[]
+  roles       Role[] @relation("role_permission")
   @@map("permissions")
 }
 
@@ -42,11 +42,12 @@ model Role {
   description String    @db.VarChar(255)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  permissions RoleInPermission[]
-  users       UserInRole[]
+  permissions Permission[] @relation("role_permission")
+  users       User[] @relation("user_role")
   @@map("roles")
 }
 
+/*
 model RoleInPermission {
   roleId        String      @db.VarChar(36) @map("role_id")
   permissionId  String      @db.VarChar(36) @map("permission_id")
@@ -64,3 +65,4 @@ model UserInRole {
   @@unique([userId, roleId], map: "user_id_role_id_unique")
   @@map("user_role")
 }
+*/

@@ -1,14 +1,15 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { User } from '@prisma/client';
-import { UserRepository } from '../../repositories';
+import { RoleRepository, UserRepository } from '../../repositories';
 import { UserCreateDto, UserUpdateDto, UserResponseDto } from './dtos';
 import { BcryptService } from '../../../common/bcrypt/bcrypt.service';
 import { ResponseErrorEnum } from '../../../common/enums/response-error.enum';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly repository: UserRepository,
+    private readonly roleRepository: RoleRepository,
     private readonly bcrypt: BcryptService,
   ) {}
 
@@ -65,8 +66,24 @@ export class UsersService {
     if (!user) {
       throw new BadRequestException(ResponseErrorEnum.USER_NOT_FOUND);
     }
-    console.log(roles);
-    //const result = await this.repository.updateOne({ id }, { data: { connect: { roles } });
+
+    const rolesResult = await this.roleRepository.findAll({
+      id: { in: roles },
+    });
+    if (rolesResult.length !== roles.length) {
+      throw new BadRequestException(ResponseErrorEnum.ROLE_NOT_FOUND);
+    }
+
+    if (user.roles.length) {
+      await this.repository.disconectRoles({ id }, user.roles);
+    }
+
+    if (roles.length) {
+      const result = await this.repository.connectRoles({ id }, roles);
+      return new UserResponseDto(result);
+    }
+
+    user.roles = [];
     return new UserResponseDto(user);
   }
 }
