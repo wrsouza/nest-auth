@@ -10,6 +10,7 @@ import { AuthService } from './auth.service';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
   ApiOperation,
   ApiResponse,
@@ -34,7 +35,7 @@ export class AuthController {
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Get user profile' })
   @ApiResponse({ status: 200, type: AuthPayloadUserDto })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({ description: 'Forbidden Error' })
   getProfile(@Request() req: AuthPayloadDto) {
     return req.user;
   }
