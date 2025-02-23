@@ -63,6 +63,82 @@ describe('AuthGuard', () => {
     expect(reflector).toBeDefined();
   });
 
+  describe('mapperUser', () => {
+    it('should map user roles to a flat array of permission names', () => {
+      // Arrange
+      const user = {
+        ...defaultUser,
+        roles: [
+          {
+            name: 'role-name',
+            description: 'role-description',
+            permissions: [
+              {
+                name: 'permission-name',
+                description: 'permission-description',
+              },
+            ],
+          },
+        ],
+      } as User & { roles: (Role & { permissions: Permission[] })[] };
+      const expectedResult = {
+        ...defaultUser,
+        roles: ['permission-name'],
+      };
+
+      // Act
+      const result = authGuard['mapperUser'](user);
+
+      // Assert
+      expect(result).toEqual(expectedResult);
+    });
+
+    it('should return an empty roles array if user has no roles', () => {
+      // Arrange
+      const user = {
+        ...defaultUser,
+        roles: [],
+      };
+      const expectedResult = {
+        ...defaultUser,
+        roles: [],
+      };
+
+      // Act
+      const result = authGuard['mapperUser'](user);
+
+      // Assert
+      expect(result).toEqual(expectedResult);
+    });
+
+    it('should return an empty roles array if roles have no permissions', () => {
+      // Arrange
+      const user = {
+        ...defaultUser,
+        roles: [
+          {
+            id: 'role-id',
+            name: 'role-name',
+            description: 'role-description',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            permissions: [],
+          },
+        ],
+      };
+      const expectedResult = {
+        ...defaultUser,
+        roles: [],
+      };
+
+      // Act
+      const result = authGuard['mapperUser'](user);
+
+      // Assert
+      expect(result).toEqual(expectedResult);
+    });
+  });
+
   describe('findUserAuthenticated', () => {
     it('should return an authenticated user with their roles and permissions', async () => {
       const expectedUser = {
