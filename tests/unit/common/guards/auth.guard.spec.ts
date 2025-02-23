@@ -69,6 +69,54 @@ describe('AuthGuard', () => {
     expect(reflector).toBeDefined();
   });
 
+  describe('extractTokenFromHeader', () => {
+    it('should return the token when a valid Bearer token is provided', () => {
+      // Arrange
+      const expectedToken = 'valid-token';
+      const request = {
+        headers: {
+          authorization: `Bearer ${expectedToken}`,
+        },
+      } as unknown as Request;
+
+      // Act
+      const token = authGuard['extractTokenFromHeader'](request);
+
+      // Assert
+      expect(token).toBe(expectedToken);
+    });
+
+    it.each([
+      [
+        'should throw UnauthorizedException if the authorization header is missing',
+        {
+          headers: {},
+        } as Request,
+      ],
+      [
+        'should throw UnauthorizedException if the authorization header is not in Bearer format',
+        {
+          headers: {
+            authorization: 'Basic some-token',
+          },
+        } as unknown as Request,
+      ],
+    ])('%s', (_, request) => {
+      // Arrange
+      let expectedError: unknown;
+
+      // Act
+      try {
+        authGuard['extractTokenFromHeader'](request);
+      } catch (err) {
+        expectedError = err;
+      }
+
+      // Assert
+      expect(expectedError).toBeInstanceOf(UnauthorizedException);
+    });
+  });
+
   describe('validatePayload', () => {
     it('should validate the token and return the payload', async () => {
       // Arrange
