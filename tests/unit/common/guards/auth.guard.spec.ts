@@ -1,11 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuthGuard } from '../../../../src/common';
+import { AuthGuard, Roles } from '../../../../src/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../../../src/config';
 import { Reflector } from '@nestjs/core';
 import {
   InternalServerErrorException,
   UnauthorizedException,
+  ExecutionContext,
 } from '@nestjs/common';
 import { Permission, Role, User } from '@prisma/client';
 
@@ -47,7 +48,9 @@ describe('AuthGuard', () => {
         },
         {
           provide: Reflector,
-          useValue: {},
+          useValue: {
+            get: jest.fn(),
+          },
         },
       ],
     }).compile();
@@ -67,6 +70,125 @@ describe('AuthGuard', () => {
     expect(jwt).toBeDefined();
     expect(prisma).toBeDefined();
     expect(reflector).toBeDefined();
+  });
+
+  describe('canActivate', () => {
+    const mockRequest = {};
+    const mockContext = {
+      switchToHttp: jest
+        .fn()
+        .mockReturnValue({ getRequest: () => mockRequest }),
+      getHandler: jest.fn(),
+    };
+    it('should return true when authentication and role validation pass', async () => {
+      // Arrange
+      const user = {
+        ...defaultUser,
+        isAdmin: true,
+      };
+      const accessToken = 'valid-token';
+      const expectedPayload = { sub: user.id, email: user.email };
+      const requiredRoles = ['list:users'];
+      const getReflectorSpy = jest
+        .spyOn(reflector, 'get')
+        .mockReturnValue(requiredRoles);
+      const extractTokenFromHeaderSpy = jest
+        .spyOn(authGuard as any, 'extractTokenFromHeader')
+        .mockReturnValueOnce(accessToken);
+      const validatePayloadSpy = jest
+        .spyOn(authGuard as any, 'validatePayload')
+        .mockResolvedValueOnce(expectedPayload);
+
+      const validateUserAuthenticatedSpy = jest
+        .spyOn(authGuard as any, 'validateUserAuthenticated')
+        .mockResolvedValueOnce(user);
+
+      const validateUserRoles = jest
+        .spyOn(authGuard as any, 'validateUserRoles')
+        .mockReturnValueOnce(true);
+
+      // Act
+      const result = await authGuard.canActivate(
+        mockContext as unknown as ExecutionContext,
+      );
+
+      // Assert
+      expect(result).toBe(true);
+      expect(mockRequest['user']).toEqual(user);
+      expect(getReflectorSpy).toHaveBeenCalledTimes(1);
+      expect(getReflectorSpy).toHaveBeenCalledWith(
+        Roles,
+        mockContext.getHandler(),
+      );
+      expect(extractTokenFromHeaderSpy).toHaveBeenCalledTimes(1);
+      expect(extractTokenFromHeaderSpy).toHaveBeenCalledWith(mockRequest);
+      expect(validatePayloadSpy).toHaveBeenCalledTimes(1);
+      expect(validatePayloadSpy).toHaveBeenCalledWith(accessToken);
+      expect(validateUserAuthenticatedSpy).toHaveBeenCalledWith(
+        expectedPayload,
+      );
+      expect(validateUserRoles).toHaveBeenCalledWith(user, requiredRoles);
+    });
+
+    it('should return false if token extraction fails', async () => {
+      // Arrange
+      const requiredRoles = ['list:users'];
+      jest.spyOn(reflector, 'get').mockReturnValue(requiredRoles);
+
+      const extractTokenFromHeaderSpy = jest
+        .spyOn(authGuard as any, 'extractTokenFromHeader')
+        .mockImplementationOnce(() => {
+          throw new UnauthorizedException();
+        });
+
+      // Act
+      const result = await authGuard.canActivate(
+        mockContext as unknown as ExecutionContext,
+      );
+
+      // Assert
+      expect(result).toBeFalsy();
+      expect(extractTokenFromHeaderSpy).toHaveBeenCalledWith(mockRequest);
+    });
+
+    /*
+    
+
+    it('should return false if payload validation fails', async () => {
+      authGuard.extractTokenFromHeader.mockReturnValue('invalidToken');
+      authGuard.validatePayload.mockImplementation(() => {
+        throw new Error();
+      });
+      const result = await authGuard.canActivate(mockContext);
+      expect(result).toBe(false);
+    });
+
+    it('should return false if user authentication fails', async () => {
+      authGuard.extractTokenFromHeader.mockReturnValue('validToken');
+      authGuard.validatePayload.mockResolvedValue({ userId: 1 });
+      authGuard.validateUserAuthenticated.mockImplementation(() => {
+        throw new Error();
+      });
+      const result = await authGuard.canActivate(mockContext);
+      expect(result).toBe(false);
+    });
+
+    it('should return false if role validation fails', async () => {
+      mockReflector.get.mockReturnValue(['admin']);
+      authGuard.extractTokenFromHeader.mockReturnValue('validToken');
+      authGuard.validatePayload.mockResolvedValue({ userId: 1 });
+      authGuard.validateUserAuthenticated.mockResolvedValue({
+        id: 1,
+        role: 'user',
+      });
+      authGuard.validateUserRoles.mockImplementation(() => {
+        throw new Error();
+      });
+
+      const result = await authGuard.canActivate(mockContext);
+      expect(result).toBe(false);
+    });
+    */
   });
 
   describe('extractTokenFromHeader', () => {
