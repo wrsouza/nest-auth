@@ -13,6 +13,10 @@ describe('BcryptService', () => {
     service = module.get<BcryptService>(BcryptService);
   });
 
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('should service be defined', () => {
     // Assert
     expect(service).toBeDefined();
@@ -36,5 +40,38 @@ describe('BcryptService', () => {
     });
   });
 
-  describe('compare', () => {});
+  describe('compare', () => {
+    it.each([
+      [
+        'should compare password with hash and return true',
+        {
+          passwordVerify: 'valid-password',
+          passwordHash: 'password-hash',
+          expectedResult: true,
+        },
+      ],
+      [
+        'should compare password with hash and return false',
+        {
+          passwordVerify: 'invalid-password',
+          passwordHash: 'password-hash',
+          expectedResult: false,
+        },
+      ],
+    ])('%s', (_, data) => {
+      // Arrange
+      const { passwordVerify, passwordHash, expectedResult } = data;
+      const compareSyncSpy = jest
+        .spyOn(bcrypt, 'compareSync')
+        .mockReturnValueOnce(expectedResult);
+
+      // Act
+      const isValid = service.compare(passwordVerify, passwordHash);
+
+      // Assert
+      expect(isValid).toEqual(expectedResult);
+      expect(compareSyncSpy).toHaveBeenCalledTimes(1);
+      expect(compareSyncSpy).toHaveBeenCalledWith(passwordVerify, passwordHash);
+    });
+  });
 });
