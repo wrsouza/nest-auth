@@ -33,7 +33,9 @@ describe('AuthGuard', () => {
         AuthGuard,
         {
           provide: JwtService,
-          useValue: {},
+          useValue: {
+            verifyAsync: jest.fn(),
+          },
         },
         {
           provide: PrismaService,
@@ -56,11 +58,86 @@ describe('AuthGuard', () => {
     reflector = module.get<Reflector>(Reflector);
   });
 
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('should all to be defined', () => {
     expect(authGuard).toBeDefined();
     expect(jwt).toBeDefined();
     expect(prisma).toBeDefined();
     expect(reflector).toBeDefined();
+  });
+
+  describe('validatePayload', () => {
+    it('should validate the token and return the payload', async () => {
+      // Arrange
+      const accessToken = 'valid-token';
+      const expectedPayload = {
+        sub: defaultUser.id,
+        email: defaultUser.email,
+      };
+      const verifyAsyncSpy = jest
+        .spyOn(jwt, 'verifyAsync')
+        .mockResolvedValueOnce(expectedPayload);
+
+      // Act
+      const result = await authGuard['validatePayload'](accessToken);
+
+      // Assert
+      expect(result).toEqual(expectedPayload);
+      expect(verifyAsyncSpy).toHaveBeenCalledWith(accessToken);
+    });
+
+    it('should throw a error when the token is invalid', async () => {
+      // Arrange
+      const accessToken = 'invalid-token';
+      const verifyAsyncSpy = jest
+        .spyOn(jwt, 'verifyAsync')
+        .mockImplementationOnce(() => {
+          throw new InternalServerErrorException();
+        });
+      let expectedError: unknown;
+
+      // Act
+      try {
+        await authGuard['validatePayload'](accessToken);
+      } catch (err: unknown) {
+        expectedError = err;
+      }
+
+      // Assert
+      expect(expectedError).toBeInstanceOf(InternalServerErrorException);
+      expect(verifyAsyncSpy).toHaveBeenCalledWith(accessToken);
+    });
+  });
+
+  describe('validateUserAuthenticated', () => {
+    it('should return a user with roles', async () => {
+      // Arrange
+      const payload = { sub: '123', email: 'test@example.com' };
+      const user = {
+        ...defaultUser,
+        roles: [],
+      };
+      const findUserAuthenticatedSpy = jest
+        .spyOn(authGuard as any, 'findUserAuthenticated')
+        .mockResolvedValueOnce(user);
+      const mapperUserSpy = jest
+        .spyOn(authGuard as any, 'mapperUser')
+        .mockReturnValueOnce(user);
+
+      // Act
+      const result = await authGuard['validateUserAuthenticated'](payload);
+
+      // Assert
+      expect(result).toEqual(user);
+      expect(findUserAuthenticatedSpy).toHaveBeenCalledWith(
+        payload.sub,
+        payload.email,
+      );
+      expect(mapperUserSpy).toHaveBeenCalledWith(user);
+    });
   });
 
   describe('mapperUser', () => {
