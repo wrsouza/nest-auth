@@ -3,7 +3,11 @@ import { AuthGuard } from '../../../../src/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../../../src/config';
 import { Reflector } from '@nestjs/core';
-import { UnauthorizedException } from '@nestjs/common';
+import {
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { Permission, Role, User } from '@prisma/client';
 
 describe('AuthGuard', () => {
   let authGuard: AuthGuard;
@@ -33,7 +37,11 @@ describe('AuthGuard', () => {
         },
         {
           provide: PrismaService,
-          useValue: {},
+          useValue: {
+            user: {
+              findUniqueOrThrow: jest.fn(),
+            },
+          },
         },
         {
           provide: Reflector,
@@ -53,6 +61,87 @@ describe('AuthGuard', () => {
     expect(jwt).toBeDefined();
     expect(prisma).toBeDefined();
     expect(reflector).toBeDefined();
+  });
+
+  describe('findUserAuthenticated', () => {
+    it('should return an authenticated user with their roles and permissions', async () => {
+      const expectedUser = {
+        id: 'id',
+        email: 'email',
+        isActive: true,
+        roles: [
+          {
+            id: 'role-id',
+            name: 'role-name',
+            description: 'role-description',
+            permissions: [
+              {
+                id: 'permission-id',
+                name: 'permission-name',
+                description: 'permission-description',
+              },
+            ],
+          },
+        ],
+      } as User & { roles: (Role & { permissions: Permission[] })[] };
+      const id = 'valid-id';
+      const email = 'valid-email';
+
+      const findUniqueOrThrowSpy = jest
+        .spyOn(prisma.user, 'findUniqueOrThrow')
+        .mockResolvedValueOnce(expectedUser);
+
+      const result = await authGuard['findUserAuthenticated'](id, email);
+
+      expect(result).toEqual(expectedUser);
+      expect(findUniqueOrThrowSpy).toHaveBeenCalledWith({
+        where: {
+          id,
+          email,
+          isActive: true,
+        },
+        include: {
+          roles: {
+            include: {
+              permissions: true,
+            },
+          },
+        },
+      });
+    });
+
+    it('should throw an error if the user is not found', async () => {
+      const id = 'invalid-id';
+      const email = 'invalid-email';
+      const findUniqueOrThrowSpy = jest
+        .spyOn(prisma.user, 'findUniqueOrThrow')
+        .mockImplementationOnce(() => {
+          throw new InternalServerErrorException();
+        });
+      let expectedError: unknown;
+
+      try {
+        await authGuard['findUserAuthenticated'](id, email);
+      } catch (err: unknown) {
+        expectedError = err;
+      }
+
+      expect(expectedError).toBeInstanceOf(InternalServerErrorException);
+      expect(findUniqueOrThrowSpy).toHaveBeenCalledWith({
+        where: {
+          id,
+          email,
+          isActive: true,
+        },
+        include: {
+          roles: {
+            include: {
+              permissions: true,
+            },
+          },
+        },
+      });
+    });
   });
 
   describe('validateUserRoles', () => {
