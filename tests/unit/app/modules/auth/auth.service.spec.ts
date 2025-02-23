@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserRepository } from '../../../../../src/app/repositories';
 import { BcryptService, ResponseErrorEnum } from '../../../../../src/common';
@@ -178,7 +174,7 @@ describe('AuthService', () => {
         .mockResolvedValueOnce(defaultUser);
 
       // Act
-      const result = await (service as any).getUserByEmail(email);
+      const result = await service['getUserByEmail'](email);
 
       // Assert
       expect(result).toEqual(defaultUser);
@@ -197,7 +193,7 @@ describe('AuthService', () => {
 
       // Act
       try {
-        await (service as any).getUserByEmail(email);
+        await service['getUserByEmail'](email);
       } catch (err: unknown) {
         expectedError = err;
       }
@@ -223,7 +219,7 @@ describe('AuthService', () => {
         .mockReturnValueOnce(true);
 
       // Act
-      (service as any).checkPasswordIsValid(password, hashPassword);
+      service['checkPasswordIsValid'](password, hashPassword);
 
       // Assert
       expect(compareSpy).toHaveBeenCalledTimes(1);
@@ -242,7 +238,7 @@ describe('AuthService', () => {
       let expectedError: unknown;
       // Act
       try {
-        (service as any).checkPasswordIsValid(password, hashPassword);
+        service['checkPasswordIsValid'](password, hashPassword);
       } catch (err: unknown) {
         expectedError = err;
       }
