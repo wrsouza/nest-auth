@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PermissionRepository } from '../../repositories/permission.repository';
 import {
   PermissionCreateDto,
@@ -33,7 +37,7 @@ export class PermissionsService {
   async findOne(id: string): Promise<PermissionResponseDto> {
     const result = await this.repository.findOne({ id });
     if (!result) {
-      throw new BadRequestException(ResponseErrorEnum.PERMISSION_NOT_FOUND);
+      throw new NotFoundException(ResponseErrorEnum.PERMISSION_NOT_FOUND);
     }
     return new PermissionResponseDto(result);
   }
@@ -44,7 +48,7 @@ export class PermissionsService {
   ): Promise<PermissionResponseDto> {
     const permission = await this.repository.findOne({ id });
     if (!permission) {
-      throw new BadRequestException(ResponseErrorEnum.PERMISSION_NOT_FOUND);
+      throw new NotFoundException(ResponseErrorEnum.PERMISSION_NOT_FOUND);
     }
     const result = await this.repository.updateOne({ id }, data);
     return new PermissionResponseDto(result);
@@ -53,7 +57,7 @@ export class PermissionsService {
   async deleteOne(id: string): Promise<void> {
     const permission = await this.repository.findOne({ id });
     if (!permission) {
-      throw new BadRequestException(ResponseErrorEnum.PERMISSION_NOT_FOUND);
+      throw new NotFoundException(ResponseErrorEnum.PERMISSION_NOT_FOUND);
     }
     await this.repository.deleteOne({ id });
   }

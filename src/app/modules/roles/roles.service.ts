@@ -17,7 +17,7 @@ export class RolesService {
 
   async findAll(): Promise<RoleResponseDto[]> {
     const result = await this.repository.findAll();
-    return result.map((Role: Role) => new RoleResponseDto(Role));
+    return result.map((role) => new RoleResponseDto(role));
   }
 
   async createOne(data: RoleCreateDto): Promise<RoleResponseDto> {
