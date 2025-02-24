@@ -22,6 +22,7 @@ describe('RolesController', () => {
             findOne: jest.fn(),
             updateOne: jest.fn(),
             deleteOne: jest.fn(),
+            updatePermissions: jest.fn(),
           },
         },
         {
@@ -138,6 +139,27 @@ describe('RolesController', () => {
       // Assert
       expect(result).toBeUndefined();
       expect(deleteOneSpy).toHaveBeenCalledWith(id);
+    });
+  });
+
+  describe('updatePermissions', () => {
+    it('should update permissions from role', async () => {
+      // Arrange
+      const id = 'updated-id';
+      const body = {
+        permissions: ['updated-permission'],
+      };
+      const expectedResult = {} as RoleResponseDto;
+      const updatePermissionsSpy = jest
+        .spyOn(service, 'updatePermissions')
+        .mockResolvedValueOnce(expectedResult);
+
+      // Act
+      const result = await controller.updatePermissions(id, body);
+
+      // Assert
+      expect(result).toEqual(expectedResult);
+      expect(updatePermissionsSpy).toHaveBeenCalledWith(id, body.permissions);
     });
   });
 });

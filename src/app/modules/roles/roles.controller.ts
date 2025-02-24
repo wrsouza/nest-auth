@@ -97,7 +97,7 @@ export class RolesController {
   @ApiBadRequestResponse({ description: 'Validation Error' })
   @ApiNotFoundResponse({ description: 'Not Found Error' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  updateRoles(
+  updatePermissions(
     @Param('id') id: string,
     @Body() body: RolePermissionsDto,
   ): Promise<RoleResponseDto> {
