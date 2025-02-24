@@ -12,6 +12,7 @@ import { ResponseErrorEnum } from '../../../../../src/common';
 describe('RolesService', () => {
   let service: RolesService;
   let repository: RoleRepository;
+  let permissionRepository: PermissionRepository;
 
   const defaultRole = {
     id: 'id',
@@ -33,6 +34,8 @@ describe('RolesService', () => {
             createOne: jest.fn(),
             updateOne: jest.fn(),
             deleteOne: jest.fn(),
+            disconectPermissions: jest.fn(),
+            connectPermissions: jest.fn(),
           },
         },
         {
@@ -45,11 +48,14 @@ describe('RolesService', () => {
     }).compile();
     service = module.get<RolesService>(RolesService);
     repository = module.get<RoleRepository>(RoleRepository);
+    permissionRepository =
+      module.get<PermissionRepository>(PermissionRepository);
   });
 
   it('should all to be defined', () => {
     expect(service).toBeDefined();
     expect(repository).toBeDefined();
+    expect(permissionRepository).toBeDefined();
   });
 
   describe('findAll', () => {
@@ -260,6 +266,141 @@ describe('RolesService', () => {
         );
       }
       expect(findOneSpy).toHaveBeenCalledWith({ id });
+    });
+  });
+
+  describe('updatePermissions', () => {
+    it('should throw BadRequestException if role is not found', async () => {
+      const id = 'update-id';
+      const permissions = ['updated-permission'];
+      const findOneSpy = jest
+        .spyOn(repository, 'findOne')
+        .mockResolvedValueOnce(null);
+      let expectedError: unknown;
+
+      try {
+        await service.updatePermissions(id, permissions);
+      } catch (err: unknown) {
+        expectedError = err;
+      }
+
+      expect(expectedError).toBeInstanceOf(NotFoundException);
+      if (expectedError instanceof NotFoundException) {
+        expect(expectedError.message).toEqual(ResponseErrorEnum.ROLE_NOT_FOUND);
+      }
+      expect(findOneSpy).toHaveBeenCalledWith({ id });
+    });
+
+    it('should throw BadRequestException if some permissions are not found', async () => {
+      const id = 'update-id';
+      const permissions = ['updated-permission'];
+      const role = {
+        ...defaultRole,
+        permissions: [],
+      };
+      const findOneSpy = jest
+        .spyOn(repository, 'findOne')
+        .mockResolvedValueOnce(role);
+      const findAllSpy = jest
+        .spyOn(permissionRepository, 'findAll')
+        .mockResolvedValueOnce([]);
+
+      let expectedError: unknown;
+
+      try {
+        await service.updatePermissions(id, permissions);
+      } catch (err: unknown) {
+        expectedError = err;
+      }
+
+      expect(expectedError).toBeInstanceOf(NotFoundException);
+      if (expectedError instanceof NotFoundException) {
+        expect(expectedError.message).toEqual(ResponseErrorEnum.ROLE_NOT_FOUND);
+      }
+      expect(findOneSpy).toHaveBeenCalledWith({ id });
+      expect(findAllSpy).toHaveBeenCalledWith({
+        id: { in: permissions },
+      });
+    });
+
+    it('should disconnect previous permissions if they exist', async () => {
+      // Arrange
+      const id = 'update-id';
+      const permissions = [];
+      const role = {
+        ...defaultRole,
+        permissions: [{ id: 'old-permission' }] as Permission[],
+      };
+      const findOneSpy = jest
+        .spyOn(repository, 'findOne')
+        .mockResolvedValueOnce(role);
+      const findAllSpy = jest
+        .spyOn(permissionRepository, 'findAll')
+        .mockResolvedValueOnce([]);
+      const disconectPermissionsSpy = jest
+        .spyOn(repository, 'disconectPermissions')
+        .mockResolvedValueOnce(role);
+
+      // Act
+      const result = await service.updatePermissions(id, permissions);
+
+      // Assert
+      expect(result).toEqual(
+        new RoleResponseDto({ ...defaultRole, permissions: [] }),
+      );
+      expect(findOneSpy).toHaveBeenCalledWith({ id });
+      expect(findAllSpy).toHaveBeenCalledWith({
+        id: { in: permissions },
+      });
+      expect(disconectPermissionsSpy).toHaveBeenCalledWith({ id }, [
+        { id: 'old-permission' },
+      ]);
+    });
+
+    it('should connect new permissions if provided', async () => {
+      // Arrange
+      const id = 'update-id';
+      const permissions = ['new-permission'];
+      const role = {
+        ...defaultRole,
+        permissions: [{ id: 'old-permission' }] as Permission[],
+      };
+      const findOneSpy = jest
+        .spyOn(repository, 'findOne')
+        .mockResolvedValueOnce(role);
+      const findAllSpy = jest
+        .spyOn(permissionRepository, 'findAll')
+        .mockResolvedValueOnce([{ id: 'new-permission' }] as Permission[]);
+      const disconectPermissionsSpy = jest
+        .spyOn(repository, 'disconectPermissions')
+        .mockResolvedValueOnce(role);
+      const connectPermissionsSpy = jest
+        .spyOn(repository, 'connectPermissions')
+        .mockResolvedValueOnce({
+          ...defaultRole,
+          permissions: [{ id: 'new-permission' }] as Permission[],
+        });
+
+      // Act
+      const result = await service.updatePermissions(id, permissions);
+
+      // Assert
+      expect(result).toEqual(
+        new RoleResponseDto({
+          ...defaultRole,
+          permissions: [{ id: 'new-permission' }] as Permission[],
+        }),
+      );
+      expect(findOneSpy).toHaveBeenCalledWith({ id });
+      expect(findAllSpy).toHaveBeenCalledWith({
+        id: { in: permissions },
+      });
+      expect(disconectPermissionsSpy).toHaveBeenCalledWith({ id }, [
+        { id: 'old-permission' },
+      ]);
+      expect(connectPermissionsSpy).toHaveBeenCalledWith({ id }, [
+        'new-permission',
+      ]);
     });
   });
 });

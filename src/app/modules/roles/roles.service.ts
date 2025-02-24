@@ -3,7 +3,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Role } from '@prisma/client';
 import { RoleCreateDto, RoleResponseDto, RoleUpdateDto } from './dtos';
 import { PermissionRepository, RoleRepository } from '../../repositories';
 import { ResponseErrorEnum } from '../../../common/enums/response-error.enum';
@@ -60,14 +59,14 @@ export class RolesService {
   ): Promise<RoleResponseDto> {
     const role = await this.repository.findOne({ id });
     if (!role) {
-      throw new BadRequestException(ResponseErrorEnum.ROLE_NOT_FOUND);
+      throw new NotFoundException(ResponseErrorEnum.ROLE_NOT_FOUND);
     }
 
     const permissionsResult = await this.permissionRepository.findAll({
       id: { in: permissions },
     });
     if (permissionsResult.length !== permissions.length) {
-      throw new BadRequestException(ResponseErrorEnum.ROLE_NOT_FOUND);
+      throw new NotFoundException(ResponseErrorEnum.ROLE_NOT_FOUND);
     }
 
     if (role.permissions.length) {
