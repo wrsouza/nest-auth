@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { RoleRepository, UserRepository } from '../../repositories';
 import { UserCreateDto, UserUpdateDto, UserResponseDto } from './dtos';
 import { BcryptService } from '../../../common/bcrypt/bcrypt.service';
@@ -33,7 +37,7 @@ export class UsersService {
   async findOne(id: string): Promise<UserResponseDto> {
     const result = await this.repository.findOne({ id });
     if (!result) {
-      throw new BadRequestException(ResponseErrorEnum.USER_NOT_FOUND);
+      throw new NotFoundException(ResponseErrorEnum.USER_NOT_FOUND);
     }
     return new UserResponseDto(result);
   }
@@ -41,7 +45,7 @@ export class UsersService {
   async updateOne(id: string, data: UserUpdateDto): Promise<UserResponseDto> {
     const user = await this.repository.findOne({ id });
     if (!user) {
-      throw new BadRequestException(ResponseErrorEnum.USER_NOT_FOUND);
+      throw new NotFoundException(ResponseErrorEnum.USER_NOT_FOUND);
     }
 
     if (data.password) {
@@ -55,7 +59,7 @@ export class UsersService {
   async deleteOne(id: string): Promise<void> {
     const user = await this.repository.findOne({ id });
     if (!user) {
-      throw new BadRequestException(ResponseErrorEnum.USER_NOT_FOUND);
+      throw new NotFoundException(ResponseErrorEnum.USER_NOT_FOUND);
     }
 
     await this.repository.deleteOne({ id });
@@ -64,14 +68,14 @@ export class UsersService {
   async updateRoles(id: string, roles: string[]): Promise<UserResponseDto> {
     const user = await this.repository.findOne({ id });
     if (!user) {
-      throw new BadRequestException(ResponseErrorEnum.USER_NOT_FOUND);
+      throw new NotFoundException(ResponseErrorEnum.USER_NOT_FOUND);
     }
 
     const rolesResult = await this.roleRepository.findAll({
       id: { in: roles },
     });
     if (rolesResult.length !== roles.length) {
-      throw new BadRequestException(ResponseErrorEnum.ROLE_NOT_FOUND);
+      throw new NotFoundException(ResponseErrorEnum.ROLE_NOT_FOUND);
     }
 
     if (user.roles.length) {
