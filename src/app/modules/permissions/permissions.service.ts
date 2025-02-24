@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PermissionRepository } from '../../repositories/permission.repository';
 import {
   PermissionCreateDto,
-  PermissionResponse,
+  PermissionResponseDto,
   PermissionUpdateDto,
 } from './dtos';
 import { Permission } from '@prisma/client';
@@ -12,14 +12,14 @@ import { ResponseErrorEnum } from '../../../common/enums/response-error.enum';
 export class PermissionsService {
   constructor(private readonly repository: PermissionRepository) {}
 
-  async findAll(): Promise<PermissionResponse[]> {
+  async findAll(): Promise<PermissionResponseDto[]> {
     const result = await this.repository.findAll();
     return result.map(
-      (permission: Permission) => new PermissionResponse(permission),
+      (permission: Permission) => new PermissionResponseDto(permission),
     );
   }
 
-  async createOne(data: PermissionCreateDto): Promise<PermissionResponse> {
+  async createOne(data: PermissionCreateDto): Promise<PermissionResponseDto> {
     const permission = await this.repository.findOne({ name: data.name });
     if (permission) {
       throw new BadRequestException(
@@ -27,27 +27,27 @@ export class PermissionsService {
       );
     }
     const result = await this.repository.createOne(data);
-    return new PermissionResponse(result);
+    return new PermissionResponseDto(result);
   }
 
-  async findOne(id: string): Promise<PermissionResponse> {
+  async findOne(id: string): Promise<PermissionResponseDto> {
     const result = await this.repository.findOne({ id });
     if (!result) {
       throw new BadRequestException(ResponseErrorEnum.PERMISSION_NOT_FOUND);
     }
-    return new PermissionResponse(result);
+    return new PermissionResponseDto(result);
   }
 
   async updateOne(
     id: string,
     data: PermissionUpdateDto,
-  ): Promise<PermissionResponse> {
+  ): Promise<PermissionResponseDto> {
     const permission = await this.repository.findOne({ id });
     if (!permission) {
       throw new BadRequestException(ResponseErrorEnum.PERMISSION_NOT_FOUND);
     }
     const result = await this.repository.updateOne({ id }, data);
-    return new PermissionResponse(result);
+    return new PermissionResponseDto(result);
   }
 
   async deleteOne(id: string): Promise<void> {

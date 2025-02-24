@@ -22,7 +22,7 @@ import {
 import {
   PermissionCreateDto,
   PermissionUpdateDto,
-  PermissionResponse,
+  PermissionResponseDto,
 } from './dtos';
 import { AuthGuard, Roles } from '../../../common';
 
@@ -36,9 +36,9 @@ export class PermissionsController {
   @Get()
   @Roles(['permissions:list'])
   @ApiOperation({ summary: 'Get all permissions' })
-  @ApiResponse({ status: 200, type: PermissionResponse, isArray: true })
+  @ApiResponse({ status: 200, type: PermissionResponseDto, isArray: true })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  async findAll(): Promise<PermissionResponse[]> {
+  async findAll(): Promise<PermissionResponseDto[]> {
     return this.service.findAll();
   }
 
@@ -46,23 +46,23 @@ export class PermissionsController {
   @Roles(['permissions:create'])
   @HttpCode(201)
   @ApiOperation({ summary: 'Create a permission' })
-  @ApiResponse({ status: 201, type: PermissionResponse })
+  @ApiResponse({ status: 201, type: PermissionResponseDto })
   @ApiBadRequestResponse({ description: 'Validation Error' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   async createOne(
     @Body() body: PermissionCreateDto,
-  ): Promise<PermissionResponse> {
+  ): Promise<PermissionResponseDto> {
     return this.service.createOne(body);
   }
 
   @Get(':id')
   @Roles(['permissions:read'])
   @ApiOperation({ summary: 'Get a permission by id' })
-  @ApiResponse({ status: 200, type: PermissionResponse })
+  @ApiResponse({ status: 200, type: PermissionResponseDto })
   @ApiBadRequestResponse({ description: 'Validation Error' })
   @ApiNotFoundResponse({ description: 'Not Found Error' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  async findOne(@Param('id') id: string): Promise<PermissionResponse> {
+  async findOne(@Param('id') id: string): Promise<PermissionResponseDto> {
     return this.service.findOne(id);
   }
 
@@ -70,14 +70,14 @@ export class PermissionsController {
   @Roles(['permissions:update'])
   @HttpCode(204)
   @ApiOperation({ summary: 'Update a permission by id' })
-  @ApiResponse({ status: 200, type: PermissionResponse })
+  @ApiResponse({ status: 200, type: PermissionResponseDto })
   @ApiBadRequestResponse({ description: 'Validation Error' })
   @ApiNotFoundResponse({ description: 'Not Found Error' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   async updateOne(
     @Param('id') id: string,
     @Body() body: PermissionUpdateDto,
-  ): Promise<PermissionResponse> {
+  ): Promise<PermissionResponseDto> {
     return this.service.updateOne(id, body);
   }
 

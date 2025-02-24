@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Permission } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 
-export class PermissionResponse {
+export class PermissionResponseDto {
   @ApiProperty({
     type: String,
     example: randomUUID(),
