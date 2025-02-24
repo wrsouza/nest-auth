@@ -22,6 +22,7 @@ describe('UsersController', () => {
             findOne: jest.fn(),
             updateOne: jest.fn(),
             deleteOne: jest.fn(),
+            updateRoles: jest.fn(),
           },
         },
         {
@@ -144,6 +145,27 @@ describe('UsersController', () => {
       // Assert
       expect(result).toBeUndefined();
       expect(deleteOneSpy).toHaveBeenCalledWith(id);
+    });
+  });
+
+  describe('updateRoles', () => {
+    it('should update roles from user', async () => {
+      // Arrange
+      const id = 'updated-id';
+      const body = {
+        roles: ['updated-role'],
+      };
+      const expectedResult = {} as UserResponseDto;
+      const updateRolesSpy = jest
+        .spyOn(service, 'updateRoles')
+        .mockResolvedValueOnce(expectedResult);
+
+      // Act
+      const result = await controller.updateRoles(id, body);
+
+      // Assert
+      expect(result).toEqual(expectedResult);
+      expect(updateRolesSpy).toHaveBeenCalledWith(id, body.roles);
     });
   });
 });
