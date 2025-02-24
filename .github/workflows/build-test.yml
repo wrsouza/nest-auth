@@ -25,14 +25,3 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      - name: Create Coverage Badge
-        uses: schneegans/dynamic-badges-action@v1.1.0
-        with:
-          auth: ${{ secrets.GIST_SECRET }}
-          gistID: 9b7d5aa0fe6ff3af0f45f9863f5e86a9
-          filename: nest-auth__main.json
-          label: coverage
-          message: ${{ env.COVERAGE }}%
-          namedLogo: jest
-          color: blue
-          logoColor: lightblue
