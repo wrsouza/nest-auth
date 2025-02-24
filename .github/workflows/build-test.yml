@@ -1,0 +1,36 @@
+name: build-test
+on:
+  push:
+    branches: [main]
+
+jobs:
+  checks:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Dependencies
+        run: npm ci
+      - name: Run Lint
+        run: npm run lint
+      - name: Run unit tests with coverage
+        run: |
+          SUMMARY="$(npm run test:cov --coverageReporters=text-summary | tail -3 | head -1)"
+          TOKENS=($SUMMARY)
+          echo "COVERAGE=$(echo ${TOKENS[2]})" >> $GITHUB_ENV
+
+      - name: Create Coverage Badge
+        uses: schneegans/dynamic-badges-action@v1.1.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: 9b7d5aa0fe6ff3af0f45f9863f5e86a9
+          filename: nest-auth__main.json
+          label: coverage
+          message: ${{ env.COVERAGE }}%
+          namedLogo: jest
+          color: blue
+          logoColor: lightblue

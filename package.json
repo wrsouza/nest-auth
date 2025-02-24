@@ -1,5 +1,5 @@
 {
-  "name": "nest-prisma",
+  "name": "nest-auth",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -85,7 +85,7 @@
       "!src/**/*.module.ts",
       "!src/main.ts"
     ],
-    "coverageDirectory": "../coverage",
+    "coverageDirectory": "coverage",
     "testEnvironment": "node"
   }
 }
