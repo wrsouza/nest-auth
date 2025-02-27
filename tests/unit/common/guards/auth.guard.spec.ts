@@ -150,45 +150,6 @@ describe('AuthGuard', () => {
       expect(result).toBeFalsy();
       expect(extractTokenFromHeaderSpy).toHaveBeenCalledWith(mockRequest);
     });
-
-    /*
-    
-
-    it('should return false if payload validation fails', async () => {
-      authGuard.extractTokenFromHeader.mockReturnValue('invalidToken');
-      authGuard.validatePayload.mockImplementation(() => {
-        throw new Error();
-      });
-      const result = await authGuard.canActivate(mockContext);
-      expect(result).toBe(false);
-    });
-
-    it('should return false if user authentication fails', async () => {
-      authGuard.extractTokenFromHeader.mockReturnValue('validToken');
-      authGuard.validatePayload.mockResolvedValue({ userId: 1 });
-      authGuard.validateUserAuthenticated.mockImplementation(() => {
-        throw new Error();
-      });
-      const result = await authGuard.canActivate(mockContext);
-      expect(result).toBe(false);
-    });
-
-    it('should return false if role validation fails', async () => {
-      mockReflector.get.mockReturnValue(['admin']);
-      authGuard.extractTokenFromHeader.mockReturnValue('validToken');
-      authGuard.validatePayload.mockResolvedValue({ userId: 1 });
-      authGuard.validateUserAuthenticated.mockResolvedValue({
-        id: 1,
-        role: 'user',
-      });
-      authGuard.validateUserRoles.mockImplementation(() => {
-        throw new Error();
-      });
-
-      const result = await authGuard.canActivate(mockContext);
-      expect(result).toBe(false);
-    });
-    */
   });
 
   describe('extractTokenFromHeader', () => {
