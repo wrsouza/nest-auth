@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -15,6 +14,7 @@ import { Migrations } from './migrations';
 import { JwtService } from '@nestjs/jwt';
 import { BcryptService } from '../../src/common';
 import { DriverAdapter } from '@prisma/client/runtime/library';
+import { App } from 'supertest/types';
 
 export class BaseSetup {
   private module: TestingModule;
@@ -58,7 +58,7 @@ export class BaseSetup {
   }
 
   private setProviders() {
-    this.request = defaults(supertest(this.app.getHttpServer()));
+    this.request = defaults(supertest(this.app.getHttpServer() as App));
     this.jwt = this.module.get<JwtService>(JwtService);
     this.bcrypt = this.module.get<BcryptService>(BcryptService);
     this.prisma = this.module.get<PrismaService>(PrismaService);
