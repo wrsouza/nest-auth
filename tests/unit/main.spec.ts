@@ -6,9 +6,6 @@ describe('Main', () => {
   let app: NestApplication;
 
   beforeAll(async () => {
-    process.env.JWT_SECRET = 'JWT_SECRET';
-    process.env.JWT_EXPIRES = '3600s';
-    process.env.DATABASE_URL = 'postgresql://';
     const module: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();

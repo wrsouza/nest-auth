@@ -14,10 +14,14 @@ import { DatabaseModule } from './config';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      validationSchema: Joi.object({
-        DATABASE_URL: Joi.string().required(),
-        JWT_SECRET: Joi.string().required(),
-      }),
+      validationSchema: Joi.object(
+        process.env.NODE_ENV !== 'test'
+          ? {
+              DATABASE_URL: Joi.string().required(),
+              JWT_SECRET: Joi.string().required(),
+            }
+          : {},
+      ),
     }),
     DatabaseModule,
     GlobalJwtModule,
