@@ -22,6 +22,5 @@ jobs:
           SUMMARY="$(npm run test:cov --coverageReporters=text-summary | tail -3 | head -1)"
           TOKENS=($SUMMARY)
           echo "COVERAGE=$(echo ${TOKENS[2]})" >> $GITHUB_ENV
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      - name: Run e2e tests
+        run: npm run test:e2e
