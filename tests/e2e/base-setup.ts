@@ -40,6 +40,12 @@ export class BaseSetup {
         },
       })
       .compile();
+    await this.initApp();
+    this.setProviders();
+    await this.runMigrations();
+  }
+
+  private async initApp() {
     this.app = this.module.createNestApplication();
     this.app.setGlobalPrefix('api');
     this.app.useGlobalPipes(
@@ -49,10 +55,16 @@ export class BaseSetup {
       }),
     );
     await this.app.init();
+  }
+
+  private setProviders() {
     this.request = defaults(supertest(this.app.getHttpServer()));
     this.jwt = this.module.get<JwtService>(JwtService);
     this.bcrypt = this.module.get<BcryptService>(BcryptService);
     this.prisma = this.module.get<PrismaService>(PrismaService);
+  }
+
+  private async runMigrations() {
     const migrations = new Migrations(this.prisma);
     await migrations.exec();
   }

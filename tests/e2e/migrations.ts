@@ -3,10 +3,10 @@ import { readdirSync, lstatSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 
 export class Migrations {
-  constructor(
-    private readonly prisma: PrismaClient,
-    private readonly querys: string[] = [],
-  ) {}
+  private readonly querys: string[] = [];
+  private newquery: string;
+
+  constructor(private readonly prisma: PrismaClient) {}
 
   async exec() {
     const defaultPath = resolve(__dirname, '..', '..', 'prisma', 'migrations');
@@ -54,22 +54,30 @@ export class Migrations {
     list.push(`${path}/${file}`);
   }
 
+  private closeQuery() {
+    if (this.newquery !== '') {
+      this.querys.push(this.newquery);
+      this.newquery = '';
+    }
+  }
+
+  private addLineToQuery(line: string) {
+    if (line.replaceAll('    ', ' ').trim()) {
+      this.newquery += line;
+    }
+  }
+
   private readFiles(path: string) {
+    this.newquery = '';
     const content = readFileSync(path, { encoding: 'utf-8' });
-    let query = '';
     for (const line of content.split('\n')) {
       if (line.indexOf('--') !== -1) {
-        if (query !== '') {
-          this.querys.push(query);
-          query = '';
-        }
+        this.closeQuery();
       } else {
-        if (line.trim()) {
-          query += line.replaceAll('    ', ' ');
-        }
+        this.addLineToQuery(line);
       }
     }
-    this.querys.push(query);
+    this.querys.push(this.newquery);
     this.querys.filter((n) => n);
   }
 }
