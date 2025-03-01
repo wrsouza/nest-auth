@@ -9,6 +9,7 @@ import {
   ExecutionContext,
 } from '@nestjs/common';
 import { Permission, Role, User } from '@prisma/client';
+import { ProfileResponseDto } from '../../../../src/app/modules/auth/dto';
 
 describe('AuthGuard', () => {
   let authGuard: AuthGuard;
@@ -114,7 +115,7 @@ describe('AuthGuard', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(mockRequest['user']).toEqual(user);
+      expect(mockRequest['user']).toEqual(new ProfileResponseDto(user));
       expect(getReflectorSpy).toHaveBeenCalledTimes(1);
       expect(getReflectorSpy).toHaveBeenCalledWith(
         Roles,

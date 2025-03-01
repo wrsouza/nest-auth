@@ -5,9 +5,10 @@ import { AuthService } from '../../../../../src/app/modules/auth/auth.service';
 import { AuthGuard } from '../../../../../src/common';
 import { PrismaService } from '../../../../../src/config';
 import {
-  AuthPayloadDto,
+  AuthRequestDto,
   AuthResponseDto,
   AuthSignInDto,
+  ProfileResponseDto,
 } from '../../../../../src/app/modules/auth/dto';
 
 describe('AuthController', () => {
@@ -52,8 +53,8 @@ describe('AuthController', () => {
     it('should return a user when call the getProfile method', () => {
       // Arrange
       const req = {
-        user: {},
-      } as AuthPayloadDto;
+        user: {} as ProfileResponseDto,
+      } as AuthRequestDto;
 
       // Act
       const result = controller.getProfile(req);

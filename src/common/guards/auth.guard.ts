@@ -4,7 +4,10 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { AuthPayloadUserDto } from '../../app/modules/auth/dto';
+import {
+  AuthPayloadUserDto,
+  ProfileResponseDto,
+} from '../../app/modules/auth/dto';
 import { Permission, Role, User } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../config';
@@ -27,7 +30,7 @@ export class AuthGuard implements CanActivate {
       const payload = await this.validatePayload(token);
       const user = await this.validateUserAuthenticated(payload);
       this.validateUserRoles(user, requiredRoles);
-      request['user'] = user;
+      request['user'] = new ProfileResponseDto(user);
     } catch {
       return false;
     }

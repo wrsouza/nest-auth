@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Post,
   Request,
   UseGuards,
@@ -19,8 +20,8 @@ import {
 import {
   AuthSignInDto,
   AuthResponseDto,
-  AuthPayloadDto,
-  AuthPayloadUserDto,
+  AuthRequestDto,
+  ProfileResponseDto,
 } from './dto';
 import { AuthGuard } from '../../../common';
 
@@ -33,13 +34,15 @@ export class AuthController {
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Get user profile' })
-  @ApiResponse({ status: 200, type: AuthPayloadUserDto })
+  @ApiResponse({ status: 200, type: ProfileResponseDto })
+  @ApiBadRequestResponse({ description: 'Validation Error' })
   @ApiForbiddenResponse({ description: 'Forbidden Error' })
-  getProfile(@Request() req: AuthPayloadDto) {
+  getProfile(@Request() req: AuthRequestDto): ProfileResponseDto {
     return req.user;
   }
 
   @Post()
+  @HttpCode(200)
   @ApiOperation({ summary: 'Sign In' })
   @ApiResponse({ status: 200, type: AuthResponseDto })
   @ApiBadRequestResponse({ description: 'Validation Error' })
