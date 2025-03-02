@@ -302,56 +302,63 @@ describe('UsersService', () => {
 
   describe('updateRoles', () => {
     it('should throw BadRequestException if user is not found', async () => {
+      // Arrange
       const id = 'update-id';
       const roles = ['updated-role'];
-      const findOneSpy = jest
-        .spyOn(repository, 'findOne')
-        .mockResolvedValueOnce(null);
+      const validateUserIdSpy = jest
+        .spyOn(service as any, 'validateUserId')
+        .mockRejectedValueOnce(
+          new NotFoundException(ResponseErrorEnum.USER_NOT_FOUND),
+        );
       let expectedError: unknown;
 
+      // Act
       try {
         await service.updateRoles(id, roles);
       } catch (err: unknown) {
         expectedError = err;
       }
 
+      // Assert
       expect(expectedError).toBeInstanceOf(NotFoundException);
       if (expectedError instanceof NotFoundException) {
         expect(expectedError.message).toEqual(ResponseErrorEnum.USER_NOT_FOUND);
       }
-      expect(findOneSpy).toHaveBeenCalledWith({ id });
+      expect(validateUserIdSpy).toHaveBeenCalledWith(id);
     });
 
     it('should throw BadRequestException if some roles are not found', async () => {
+      // Arrange
       const id = 'update-id';
       const roles = ['updated-role'];
       const user = {
         ...defaultUser,
         roles: [],
       };
-      const findOneSpy = jest
-        .spyOn(repository, 'findOne')
+      const validateUserIdSpy = jest
+        .spyOn(service as any, 'validateUserId')
         .mockResolvedValueOnce(user);
-      const findAllSpy = jest
-        .spyOn(roleRepository, 'findAll')
-        .mockResolvedValueOnce([]);
-
+      const validateRolesSpy = jest
+        .spyOn(service as any, 'validateRoles')
+        .mockRejectedValueOnce(
+          new NotFoundException(ResponseErrorEnum.ROLE_NOT_FOUND),
+        );
       let expectedError: unknown;
 
+      // Act
       try {
         await service.updateRoles(id, roles);
       } catch (err: unknown) {
         expectedError = err;
       }
 
+      // Assert
       expect(expectedError).toBeInstanceOf(NotFoundException);
       if (expectedError instanceof NotFoundException) {
         expect(expectedError.message).toEqual(ResponseErrorEnum.ROLE_NOT_FOUND);
       }
-      expect(findOneSpy).toHaveBeenCalledWith({ id });
-      expect(findAllSpy).toHaveBeenCalledWith({
-        id: { in: roles },
-      });
+      expect(validateUserIdSpy).toHaveBeenCalledWith(id);
+      expect(validateRolesSpy).toHaveBeenCalledWith(roles);
     });
 
     it('should disconnect previous roles if they exist', async () => {
@@ -362,15 +369,15 @@ describe('UsersService', () => {
         ...defaultUser,
         roles: [{ id: 'old-role' }] as Role[],
       };
-      const findOneSpy = jest
-        .spyOn(repository, 'findOne')
+      const validateUserIdSpy = jest
+        .spyOn(service as any, 'validateUserId')
         .mockResolvedValueOnce(user);
-      const findAllSpy = jest
-        .spyOn(roleRepository, 'findAll')
-        .mockResolvedValueOnce([]);
-      const disconectRolesSpy = jest
-        .spyOn(repository, 'disconectRoles')
-        .mockResolvedValueOnce(user);
+      const validateRolesSpy = jest
+        .spyOn(service as any, 'validateRoles')
+        .mockImplementationOnce(() => Promise.resolve());
+      const disconnectRolesSpy = jest
+        .spyOn(service as any, 'disconnectRoles')
+        .mockImplementationOnce(() => Promise.resolve());
 
       // Act
       const result = await service.updateRoles(id, roles);
@@ -379,13 +386,9 @@ describe('UsersService', () => {
       expect(result).toEqual(
         new UserResponseDto({ ...defaultUser, roles: [] }),
       );
-      expect(findOneSpy).toHaveBeenCalledWith({ id });
-      expect(findAllSpy).toHaveBeenCalledWith({
-        id: { in: roles },
-      });
-      expect(disconectRolesSpy).toHaveBeenCalledWith({ id }, [
-        { id: 'old-role' },
-      ]);
+      expect(validateUserIdSpy).toHaveBeenCalledWith(id);
+      expect(validateRolesSpy).toHaveBeenCalledWith(roles);
+      expect(disconnectRolesSpy).toHaveBeenCalledWith(user);
     });
 
     it('should connect new roles if provided', async () => {
@@ -396,15 +399,15 @@ describe('UsersService', () => {
         ...defaultUser,
         roles: [{ id: 'old-role' }] as Role[],
       };
-      const findOneSpy = jest
-        .spyOn(repository, 'findOne')
+      const validateUserIdSpy = jest
+        .spyOn(service as any, 'validateUserId')
         .mockResolvedValueOnce(user);
-      const findAllSpy = jest
-        .spyOn(roleRepository, 'findAll')
-        .mockResolvedValueOnce([{ id: 'new-role' }] as Role[]);
-      const disconectRolesSpy = jest
-        .spyOn(repository, 'disconectRoles')
-        .mockResolvedValueOnce(user);
+      const validateRolesSpy = jest
+        .spyOn(service as any, 'validateRoles')
+        .mockImplementationOnce(() => Promise.resolve());
+      const disconnectRolesSpy = jest
+        .spyOn(service as any, 'disconnectRoles')
+        .mockImplementationOnce(() => Promise.resolve());
       const connectRolesSpy = jest
         .spyOn(repository, 'connectRoles')
         .mockResolvedValueOnce({
@@ -422,14 +425,217 @@ describe('UsersService', () => {
           roles: [{ id: 'new-role' }] as Role[],
         }),
       );
+      expect(validateUserIdSpy).toHaveBeenCalledWith(id);
+      expect(validateRolesSpy).toHaveBeenCalledWith(roles);
+      expect(disconnectRolesSpy).toHaveBeenCalledWith(user);
+      expect(connectRolesSpy).toHaveBeenCalledWith({ id }, ['new-role']);
+    });
+  });
+
+  describe('validateUserId', () => {
+    it('should throw an error when not found user', async () => {
+      // Arrange
+      const id = 'valid-id';
+      const findOneSpy = jest
+        .spyOn(repository, 'findOne')
+        .mockResolvedValueOnce(null);
+      let expectedError: unknown;
+
+      // Act
+      try {
+        await service['validateUserId'](id);
+      } catch (err: unknown) {
+        expectedError = err;
+      }
+
+      // Assert
+      expect(expectedError).toBeInstanceOf(NotFoundException);
+      expect(expectedError).toEqual(
+        new NotFoundException(ResponseErrorEnum.USER_NOT_FOUND),
+      );
       expect(findOneSpy).toHaveBeenCalledWith({ id });
+    });
+
+    it('should validate a user and return data', async () => {
+      // Arrange
+      const id = 'valid-id';
+      const findOneSpy = jest
+        .spyOn(repository, 'findOne')
+        .mockResolvedValueOnce({} as User & { roles: Role[] });
+
+      // Act
+      const result = await service['validateUserId'](id);
+
+      // Assert
+      expect(result).toEqual({});
+      expect(findOneSpy).toHaveBeenCalledWith({ id });
+    });
+  });
+
+  describe('validateEmailExists', () => {
+    it('should validate email when not exists and not have id', async () => {
+      // Arrange
+      const email = 'valid-email';
+      const findOneSpy = jest
+        .spyOn(repository, 'findOne')
+        .mockResolvedValueOnce(null);
+
+      // Act
+      await service['validateEmailExists'](email);
+
+      // Assert
+      expect(findOneSpy).toHaveBeenCalledWith({ email });
+    });
+
+    it('should throw error when validate email found user', async () => {
+      // Arrange
+      const email = 'valid-email';
+      const findOneSpy = jest
+        .spyOn(repository, 'findOne')
+        .mockResolvedValueOnce({} as User & { roles: Role[] });
+      let expectedError: unknown;
+
+      // Act
+      try {
+        await service['validateEmailExists'](email);
+      } catch (err: unknown) {
+        expectedError = err;
+      }
+
+      // Assert
+      expect(expectedError).toBeInstanceOf(BadRequestException);
+      expect(expectedError).toEqual(
+        new BadRequestException(ResponseErrorEnum.USER_ALREADY_EXISTS),
+      );
+      expect(findOneSpy).toHaveBeenCalledWith({ email });
+    });
+
+    it('should validate email when not exists and have id', async () => {
+      // Arrange
+      const email = 'valid-email';
+      const id = 'valid-id';
+      const findOneSpy = jest
+        .spyOn(repository, 'findOne')
+        .mockResolvedValueOnce(null);
+
+      // Act
+      await service['validateEmailExists'](email, id);
+
+      // Assert
+      expect(findOneSpy).toHaveBeenCalledWith({
+        email,
+        NOT: {
+          id: 'valid-id',
+        },
+      });
+    });
+
+    it('should throw error when validate email found user', async () => {
+      // Arrange
+      const email = 'valid-email';
+      const id = 'valid-id';
+      const findOneSpy = jest
+        .spyOn(repository, 'findOne')
+        .mockResolvedValueOnce({} as User & { roles: Role[] });
+      let expectedError: unknown;
+
+      // Act
+      try {
+        await service['validateEmailExists'](email, id);
+      } catch (err: unknown) {
+        expectedError = err;
+      }
+
+      // Assert
+      expect(expectedError).toBeInstanceOf(BadRequestException);
+      expect(expectedError).toEqual(
+        new BadRequestException(ResponseErrorEnum.USER_ALREADY_EXISTS),
+      );
+      expect(findOneSpy).toHaveBeenCalledWith({
+        email,
+        NOT: {
+          id: 'valid-id',
+        },
+      });
+    });
+  });
+
+  describe('validateRoles', () => {
+    it('should found all roles in list', async () => {
+      // Arrange
+      const roles = [''];
+      const findAllSpy = jest
+        .spyOn(roleRepository, 'findAll')
+        .mockResolvedValueOnce([{}] as Role[]);
+
+      // Act
+      await service['validateRoles'](roles);
+
+      // Assert
+      expect(findAllSpy).toHaveBeenCalledWith({
+        id: { in: [''] },
+      });
+    });
+
+    it('should not found all roles in list', async () => {
+      // Arrange
+      const roles = ['id', 'id'];
+      const findAllSpy = jest
+        .spyOn(roleRepository, 'findAll')
+        .mockResolvedValueOnce([{}] as Role[]);
+      let expectedError: unknown;
+
+      // Act
+      try {
+        await service['validateRoles'](roles);
+      } catch (err: unknown) {
+        expectedError = err;
+      }
+
+      // Assert
+      expect(expectedError).toBeInstanceOf(NotFoundException);
+      expect(expectedError).toEqual(
+        new NotFoundException(ResponseErrorEnum.ROLE_NOT_FOUND),
+      );
       expect(findAllSpy).toHaveBeenCalledWith({
         id: { in: roles },
       });
-      expect(disconectRolesSpy).toHaveBeenCalledWith({ id }, [
-        { id: 'old-role' },
-      ]);
-      expect(connectRolesSpy).toHaveBeenCalledWith({ id }, ['new-role']);
+    });
+  });
+
+  describe('disconnectRoles', () => {
+    it('should not disconnect roles when not have roles', async () => {
+      // Arrange
+      const user = {
+        id: 'id',
+        roles: [],
+      } as unknown as User & { roles: Role[] };
+      const disconectRolesSpy = jest.spyOn(repository, 'disconectRoles');
+
+      // Act
+      await service['disconnectRoles'](user);
+
+      // Assert
+      expect(disconectRolesSpy).toHaveBeenCalledTimes(0);
+    });
+
+    it('should disconnect roles when have roles in user', async () => {
+      // Arrange
+      const user = {
+        id: 'id',
+        roles: [{}],
+      } as unknown as User & { roles: Role[] };
+      const disconectRolesSpy = jest.spyOn(repository, 'disconectRoles');
+
+      // Act
+      await service['disconnectRoles'](user);
+
+      // Assert
+      expect(disconectRolesSpy).toHaveBeenCalledTimes(1);
+      expect(disconectRolesSpy).toHaveBeenCalledWith(
+        { id: user.id },
+        user.roles,
+      );
     });
   });
 });

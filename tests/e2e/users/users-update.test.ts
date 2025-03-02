@@ -4,7 +4,7 @@ import { PrismaService } from '../../../src/config';
 import { JwtService } from '@nestjs/jwt';
 import { BcryptService } from '../../../src/common';
 
-describe('Users Create Api', () => {
+describe('Users Update Api', () => {
   const baseSetup: BaseSetup = new BaseSetup();
   let request: supertest.SuperAgentTest;
   let prisma: PrismaService;
@@ -30,9 +30,10 @@ describe('Users Create Api', () => {
   afterEach(() => baseSetup.afterEach());
   afterAll(() => baseSetup.afterAll());
 
-  describe(`/users (POST)`, () => {
+  describe(`/users/:id (PUT)`, () => {
     it('should return status code 403 when not send authorization code', async () => {
-      const result = await request.post('/api/users').send({});
+      const id = '19acb732-0afd-49d2-9db7-a43ae9120479';
+      const result = await request.put(`/api/users/${id}`);
       expect(result.statusCode).toBe(403);
       expect(result.body).toEqual({
         error: 'Forbidden',
@@ -53,7 +54,7 @@ describe('Users Create Api', () => {
       const headers = {
         Authorization: `Bearer ${accessToken}`,
       };
-      const result = await request.post('/api/users').set(headers).send({});
+      const result = await request.put(`/api/users/${user.id}`).set(headers);
       expect(result.statusCode).toBe(403);
       expect(result.body).toEqual({
         error: 'Forbidden',
@@ -62,7 +63,7 @@ describe('Users Create Api', () => {
       });
     });
 
-    it('should return status code 400 when send empty body', async () => {
+    it('should return status code 400 when send wrong data', async () => {
       const user = await prisma.user.create({
         data: {
           ...defaultUser,
@@ -73,8 +74,8 @@ describe('Users Create Api', () => {
               description: 'users role',
               permissions: {
                 create: {
-                  name: 'users:create',
-                  description: 'create users',
+                  name: 'users:update',
+                  description: 'update users',
                 },
               },
             },
@@ -86,25 +87,26 @@ describe('Users Create Api', () => {
       const headers = {
         Authorization: `Bearer ${accessToken}`,
       };
-      const body = {};
-      const result = await request.post('/api/users').set(headers).send(body);
+      const body = {
+        email: 'wrong-email',
+        password: '123',
+      };
+      const result = await request
+        .put(`/api/users/${user.id}`)
+        .set(headers)
+        .send(body);
       expect(result.statusCode).toBe(400);
       expect(result.body).toEqual({
         error: 'Bad Request',
         message: [
-          'name must be longer than or equal to 3 characters',
-          'name must be a string',
           'email must be an email',
           'password must be longer than or equal to 6 characters',
-          'password must be a string',
-          'isActive must be a boolean value',
-          'isAdmin must be a boolean value',
         ],
         statusCode: 400,
       });
     });
 
-    it('should return status 400 when send email already exists', async () => {
+    it('should return status code 404 when send wrong user id', async () => {
       const user = await prisma.user.create({
         data: {
           ...defaultUser,
@@ -115,8 +117,8 @@ describe('Users Create Api', () => {
               description: 'users role',
               permissions: {
                 create: {
-                  name: 'users:create',
-                  description: 'create users',
+                  name: 'users:update',
+                  description: 'update users',
                 },
               },
             },
@@ -131,16 +133,27 @@ describe('Users Create Api', () => {
       const body = {
         ...defaultUser,
       };
-      const result = await request.post('/api/users').set(headers).send(body);
-      expect(result.statusCode).toBe(400);
-      expect(result.body).toEqual({
-        error: 'Bad Request',
-        message: 'User already exists',
-        statusCode: 400,
-      });
+      const id = '19acb732-0afd-49d2-9db7-a43ae9120479';
+      const result = await request
+        .put(`/api/users/${id}`)
+        .set(headers)
+        .send(body);
+      expect(result.statusCode).toBe(404);
     });
 
-    it('should return status code 201 and create a user', async () => {
+    it('should return status code 400 when send email that already exists', async () => {
+      const body = {
+        name: 'John Doe',
+        email: 'john.doe@domain.com',
+        password: 'example',
+        isActive: true,
+        isAdmin: false,
+      };
+      await prisma.user.create({
+        data: {
+          ...body,
+        },
+      });
       const user = await prisma.user.create({
         data: {
           ...defaultUser,
@@ -151,8 +164,8 @@ describe('Users Create Api', () => {
               description: 'users role',
               permissions: {
                 create: {
-                  name: 'users:create',
-                  description: 'create users',
+                  name: 'users:update',
+                  description: 'update users',
                 },
               },
             },
@@ -164,6 +177,19 @@ describe('Users Create Api', () => {
       const headers = {
         Authorization: `Bearer ${accessToken}`,
       };
+      const result = await request
+        .put(`/api/users/${user.id}`)
+        .set(headers)
+        .send(body);
+      expect(result.statusCode).toBe(400);
+      expect(result.body).toEqual({
+        error: 'Bad Request',
+        message: 'User already exists',
+        statusCode: 400,
+      });
+    });
+
+    it('should return status code 200 and update user', async () => {
       const body = {
         name: 'John Doe',
         email: 'john.doe@domain.com',
@@ -171,33 +197,44 @@ describe('Users Create Api', () => {
         isActive: true,
         isAdmin: false,
       };
-
-      const result = await request.post('/api/users').set(headers).send(body);
-      expect(result.statusCode).toBe(201);
-      expect(result.body).toHaveProperty('id');
-      expect(result.body).toHaveProperty('createdAt');
-      expect(result.body).toHaveProperty('updatedAt');
+      const user = await prisma.user.create({
+        data: {
+          ...defaultUser,
+          password: bcrypt.hash('example'),
+          roles: {
+            create: {
+              name: 'users role',
+              description: 'users role',
+              permissions: {
+                create: {
+                  name: 'users:update',
+                  description: 'update users',
+                },
+              },
+            },
+          },
+        },
+      });
+      const payload = { sub: user.id, email: user.email };
+      const accessToken = await jwt.signAsync(payload);
+      const headers = {
+        Authorization: `Bearer ${accessToken}`,
+      };
+      const result = await request
+        .put(`/api/users/${user.id}`)
+        .set(headers)
+        .send(body);
+      expect(result.statusCode).toBe(200);
       expect(result.body).toEqual(
         expect.objectContaining({
+          id: user.id,
           name: body.name,
           email: body.email,
           isActive: body.isActive,
           isAdmin: body.isAdmin,
+          createdAt: user.createdAt.toISOString(),
         }),
       );
-
-      const { id } = result.body as { id: string };
-      const userCreated = await prisma.user.findUniqueOrThrow({
-        where: {
-          id,
-        },
-      });
-      expect(userCreated.name).toEqual(body.name);
-      expect(userCreated.email).toEqual(body.email);
-      expect(userCreated.isActive).toEqual(body.isActive);
-      expect(userCreated.isAdmin).toEqual(body.isAdmin);
-      const compare = bcrypt.compare(body.password, userCreated.password);
-      expect(compare).toBeTruthy();
     });
   });
 });
