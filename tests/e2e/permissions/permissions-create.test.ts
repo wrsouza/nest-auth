@@ -2,11 +2,15 @@ import supertest from 'supertest';
 import { JwtService } from '@nestjs/jwt';
 import { BaseSetup } from '../base-setup';
 import { PrismaService } from '../../../src/config';
-import { BcryptService } from '../../../src/common';
+import { BcryptService, ResponseErrorEnum } from '../../../src/common';
 import {
   getAuthenticatedUserWithoutRoles,
   getAuthenticatedUserWithRoles,
 } from '../users/users.testcases';
+import {
+  createDefaultPermission,
+  defaultPermission,
+} from './permissions.testcases';
 
 describe('Permissions Create Api', () => {
   const baseSetup: BaseSetup = new BaseSetup();
@@ -92,6 +96,75 @@ describe('Permissions Create Api', () => {
         ],
         statusCode: 400,
       });
+    });
+
+    it('should return status code 400 when send name already exists', async () => {
+      // Arrange
+      const { headers } = await getAuthenticatedUserWithRoles(
+        prisma,
+        bcrypt,
+        jwt,
+        'permissions:create',
+      );
+      await createDefaultPermission(prisma);
+      const body = {
+        ...defaultPermission,
+      };
+
+      // Act
+      const result = await request
+        .post('/api/permissions')
+        .set(headers)
+        .send(body);
+
+      // Assert
+      expect(result.statusCode).toBe(400);
+      expect(result.body).toEqual({
+        error: 'Bad Request',
+        message: ResponseErrorEnum.PERMISSION_ALREADY_EXISTS,
+        statusCode: 400,
+      });
+    });
+
+    it('should return status code 201 and create a permission', async () => {
+      // Arrange
+      const { headers } = await getAuthenticatedUserWithRoles(
+        prisma,
+        bcrypt,
+        jwt,
+        'permissions:create',
+      );
+      const body = {
+        ...defaultPermission,
+      };
+
+      // Act
+      const result = await request
+        .post('/api/permissions')
+        .set(headers)
+        .send(body);
+
+      // Assert
+      expect(result.statusCode).toBe(201);
+      expect(result.body).toHaveProperty('id');
+      expect(result.body).toHaveProperty('updatedAt');
+      expect(result.body).toHaveProperty('createdAt');
+      expect(result.body).toEqual(
+        expect.objectContaining({
+          name: body.name,
+          description: body.description,
+        }),
+      );
+
+      // Check in Database
+      const { id } = result.body as { id: string };
+      const permissionCreated = await prisma.permission.findUniqueOrThrow({
+        where: {
+          id,
+        },
+      });
+      expect(permissionCreated.name).toEqual(body.name);
+      expect(permissionCreated.description).toEqual(body.description);
     });
   });
 });
