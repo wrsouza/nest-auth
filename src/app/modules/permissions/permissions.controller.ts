@@ -68,7 +68,6 @@ export class PermissionsController {
 
   @Put(':id')
   @Roles(['permissions:update'])
-  @HttpCode(204)
   @ApiOperation({ summary: 'Update a permission by id' })
   @ApiResponse({ status: 200, type: PermissionResponseDto })
   @ApiBadRequestResponse({ description: 'Validation Error' })

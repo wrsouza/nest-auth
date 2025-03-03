@@ -3,7 +3,10 @@ import { JwtService } from '@nestjs/jwt';
 import { BaseSetup } from '../base-setup';
 import { PrismaService } from '../../../src/config';
 import { BcryptService } from '../../../src/common';
-import { getAuthenticatedUserWithoutRoles } from '../users/users.testcases';
+import {
+  getAuthenticatedUserWithoutRoles,
+  getAuthenticatedUserWithRoles,
+} from '../users/users.testcases';
 
 describe('Permissions Delete Api', () => {
   const baseSetup: BaseSetup = new BaseSetup();
@@ -56,6 +59,30 @@ describe('Permissions Delete Api', () => {
         message: 'Forbidden resource',
         statusCode: 403,
       });
+    });
+
+    it('should return status code 200 and return a list of permissions', async () => {
+      // Arrange
+      const { headers, authenticatedUser } =
+        await getAuthenticatedUserWithRoles(
+          prisma,
+          bcrypt,
+          jwt,
+          'permissions:list',
+        );
+
+      // Act
+      const result = await request.get('/api/permissions').set(headers);
+
+      // Assert
+      expect(result.statusCode).toBe(200);
+      expect(result.body).toEqual([
+        ...authenticatedUser.roles[0].permissions.map((permission) => ({
+          ...permission,
+          createdAt: permission.createdAt.toISOString(),
+          updatedAt: permission.updatedAt.toISOString(),
+        })),
+      ]);
     });
   });
 });

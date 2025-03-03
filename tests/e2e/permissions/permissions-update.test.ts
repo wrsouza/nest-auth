@@ -2,9 +2,16 @@ import supertest from 'supertest';
 import { JwtService } from '@nestjs/jwt';
 import { BaseSetup } from '../base-setup';
 import { PrismaService } from '../../../src/config';
-import { BcryptService } from '../../../src/common';
-import { getAuthenticatedUserWithoutRoles } from '../users/users.testcases';
+import { BcryptService, ResponseErrorEnum } from '../../../src/common';
+import {
+  getAuthenticatedUserWithoutRoles,
+  getAuthenticatedUserWithRoles,
+} from '../users/users.testcases';
 import { randomUUID } from 'node:crypto';
+import {
+  createDefaultPermission,
+  defaultPermission,
+} from './permissions.testcases';
 
 describe('Permissions Delete Api', () => {
   const baseSetup: BaseSetup = new BaseSetup();
@@ -64,6 +71,76 @@ describe('Permissions Delete Api', () => {
         message: 'Forbidden resource',
         statusCode: 403,
       });
+    });
+
+    it('should return status code 404 when permission is not found', async () => {
+      // Arrange
+      const { headers } = await getAuthenticatedUserWithRoles(
+        prisma,
+        bcrypt,
+        jwt,
+        'permissions:update',
+      );
+      const body = {
+        ...defaultPermission,
+      };
+      const id = randomUUID();
+
+      // Act
+      const result = await request
+        .put(`/api/permissions/${id}`)
+        .set(headers)
+        .send(body);
+
+      // Assert
+      expect(result.statusCode).toBe(404);
+      expect(result.body).toEqual({
+        error: 'Not Found',
+        message: ResponseErrorEnum.PERMISSION_NOT_FOUND,
+        statusCode: 404,
+      });
+    });
+
+    it('should return status code 200 when permission is updated', async () => {
+      // Arrange
+      const { headers } = await getAuthenticatedUserWithRoles(
+        prisma,
+        bcrypt,
+        jwt,
+        'permissions:update',
+      );
+      const { permission } = await createDefaultPermission(prisma);
+      const body = {
+        name: 'permissions:test',
+        description: 'description of permissions',
+      };
+      const { id } = permission;
+
+      // Act
+      const result = await request
+        .put(`/api/permissions/${id}`)
+        .set(headers)
+        .send(body);
+
+      // Assert
+      expect(result.statusCode).toBe(200);
+      expect(result.body).toEqual(
+        expect.objectContaining({
+          id,
+          name: body.name,
+          description: body.description,
+          createdAt: permission.createdAt.toISOString(),
+        }),
+      );
+
+      // Check in Database
+      const permissionUpdated = await prisma.permission.findUniqueOrThrow({
+        where: {
+          id,
+        },
+      });
+      expect(permissionUpdated.name).toEqual(body.name);
+      expect(permissionUpdated.description).toEqual(body.description);
     });
   });
 });
