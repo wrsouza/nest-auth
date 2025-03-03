@@ -4,7 +4,7 @@ import { PrismaService } from '../../../src/config';
 import { JwtService } from '@nestjs/jwt';
 import { BcryptService } from '../../../src/common';
 
-describe('Users Update Api', () => {
+describe('Users Delete Api', () => {
   const baseSetup: BaseSetup = new BaseSetup();
   let request: supertest.SuperAgentTest;
   let prisma: PrismaService;
@@ -30,10 +30,15 @@ describe('Users Update Api', () => {
   afterEach(() => baseSetup.afterEach());
   afterAll(() => baseSetup.afterAll());
 
-  describe(`/users/:id (PUT)`, () => {
+  describe(`/users/:id (DELETE)`, () => {
     it('should return status code 403 when not send authorization code', async () => {
+      // Arrange
       const id = '19acb732-0afd-49d2-9db7-a43ae9120479';
-      const result = await request.put(`/api/users/${id}`);
+
+      // Act
+      const result = await request.delete(`/api/users/${id}`).send({});
+
+      // Assert
       expect(result.statusCode).toBe(403);
       expect(result.body).toEqual({
         error: 'Forbidden',
@@ -43,6 +48,7 @@ describe('Users Update Api', () => {
     });
 
     it('should return status code 403 when user not have permission', async () => {
+      // Arrange
       const user = await prisma.user.create({
         data: {
           ...defaultUser,
@@ -54,7 +60,15 @@ describe('Users Update Api', () => {
       const headers = {
         Authorization: `Bearer ${accessToken}`,
       };
-      const result = await request.put(`/api/users/${user.id}`).set(headers);
+      const id = '19acb732-0afd-49d2-9db7-a43ae9120479';
+
+      // Act
+      const result = await request
+        .delete(`/api/users/${id}`)
+        .set(headers)
+        .send({});
+
+      // Assert
       expect(result.statusCode).toBe(403);
       expect(result.body).toEqual({
         error: 'Forbidden',
@@ -63,50 +77,8 @@ describe('Users Update Api', () => {
       });
     });
 
-    it('should return status code 400 when send wrong data', async () => {
-      const user = await prisma.user.create({
-        data: {
-          ...defaultUser,
-          password: bcrypt.hash('example'),
-          roles: {
-            create: {
-              name: 'users role',
-              description: 'users role',
-              permissions: {
-                create: {
-                  name: 'users:update',
-                  description: 'update users',
-                },
-              },
-            },
-          },
-        },
-      });
-      const payload = { sub: user.id, email: user.email };
-      const accessToken = await jwt.signAsync(payload);
-      const headers = {
-        Authorization: `Bearer ${accessToken}`,
-      };
-      const body = {
-        email: 'wrong-email',
-        password: '123',
-      };
-      const result = await request
-        .put(`/api/users/${user.id}`)
-        .set(headers)
-        .send(body);
-      expect(result.statusCode).toBe(400);
-      expect(result.body).toEqual({
-        error: 'Bad Request',
-        message: [
-          'email must be an email',
-          'password must be longer than or equal to 6 characters',
-        ],
-        statusCode: 400,
-      });
-    });
-
     it('should return status code 404 when send wrong user id', async () => {
+      // Arrange
       const user = await prisma.user.create({
         data: {
           ...defaultUser,
@@ -117,8 +89,8 @@ describe('Users Update Api', () => {
               description: 'users role',
               permissions: {
                 create: {
-                  name: 'users:update',
-                  description: 'update users',
+                  name: 'users:delete',
+                  description: 'delete users',
                 },
               },
             },
@@ -134,10 +106,14 @@ describe('Users Update Api', () => {
         ...defaultUser,
       };
       const id = '19acb732-0afd-49d2-9db7-a43ae9120479';
+
+      // Act
       const result = await request
-        .put(`/api/users/${id}`)
+        .delete(`/api/users/${id}`)
         .set(headers)
         .send(body);
+
+      // Assert
       expect(result.statusCode).toBe(404);
       expect(result.body).toEqual({
         error: 'Not Found',
@@ -146,17 +122,15 @@ describe('Users Update Api', () => {
       });
     });
 
-    it('should return status code 400 when send email that already exists', async () => {
-      const body = {
-        name: 'John Doe',
-        email: 'john.doe@domain.com',
-        password: 'example',
-        isActive: true,
-        isAdmin: false,
-      };
-      await prisma.user.create({
+    it('should return status code 204 and delete a user', async () => {
+      // Arrange
+      const userToDelete = await prisma.user.create({
         data: {
-          ...body,
+          name: 'John Doe',
+          email: 'john.doe@domain.com',
+          password: bcrypt.hash('example'),
+          isActive: true,
+          isAdmin: true,
         },
       });
       const user = await prisma.user.create({
@@ -169,8 +143,8 @@ describe('Users Update Api', () => {
               description: 'users role',
               permissions: {
                 create: {
-                  name: 'users:update',
-                  description: 'update users',
+                  name: 'users:delete',
+                  description: 'delete users',
                 },
               },
             },
@@ -182,64 +156,23 @@ describe('Users Update Api', () => {
       const headers = {
         Authorization: `Bearer ${accessToken}`,
       };
-      const result = await request
-        .put(`/api/users/${user.id}`)
-        .set(headers)
-        .send(body);
-      expect(result.statusCode).toBe(400);
-      expect(result.body).toEqual({
-        error: 'Bad Request',
-        message: 'User already exists',
-        statusCode: 400,
-      });
-    });
+      const body = {
+        ...defaultUser,
+      };
+      const id = userToDelete.id;
 
-    it('should return status code 200 and update user', async () => {
-      const body = {
-        name: 'John Doe',
-        email: 'john.doe@domain.com',
-        password: 'example',
-        isActive: true,
-        isAdmin: false,
-      };
-      const user = await prisma.user.create({
-        data: {
-          ...defaultUser,
-          password: bcrypt.hash('example'),
-          roles: {
-            create: {
-              name: 'users role',
-              description: 'users role',
-              permissions: {
-                create: {
-                  name: 'users:update',
-                  description: 'update users',
-                },
-              },
-            },
-          },
-        },
-      });
-      const payload = { sub: user.id, email: user.email };
-      const accessToken = await jwt.signAsync(payload);
-      const headers = {
-        Authorization: `Bearer ${accessToken}`,
-      };
+      // Act
       const result = await request
-        .put(`/api/users/${user.id}`)
+        .delete(`/api/users/${id}`)
         .set(headers)
         .send(body);
-      expect(result.statusCode).toBe(200);
-      expect(result.body).toEqual(
-        expect.objectContaining({
-          id: user.id,
-          name: body.name,
-          email: body.email,
-          isActive: body.isActive,
-          isAdmin: body.isAdmin,
-          createdAt: user.createdAt.toISOString(),
-        }),
-      );
+
+      // Assert
+      expect(result.statusCode).toBe(204);
+      expect(result.body).toEqual({});
+
+      const userDeleted = await prisma.user.findUnique({ where: { id } });
+      expect(userDeleted).toBeNull();
     });
   });
 });
