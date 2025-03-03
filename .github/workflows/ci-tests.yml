@@ -1,7 +1,10 @@
-name: build-test
+name: Build
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   ci-tests:
@@ -26,6 +29,11 @@ jobs:
           SUMMARY="$(npm run test:cov --coverageReporters=text-summary | tail -3 | head -1)"
           TOKENS=($SUMMARY)
           echo "COVERAGE=$(echo ${TOKENS[2]})" >> $GITHUB_ENV
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: Run e2e tests
         run: npm run test:e2e
