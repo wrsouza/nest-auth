@@ -1,8 +1,15 @@
 import supertest from 'supertest';
+import { JwtService } from '@nestjs/jwt';
 import { BaseSetup } from '../base-setup';
 import { PrismaService } from '../../../src/config';
-import { JwtService } from '@nestjs/jwt';
 import { BcryptService } from '../../../src/common';
+import {
+  createDefaultUserWithoutRole,
+  defaultAuthenticateUser,
+  defaultUser,
+  getAuthenticatedUserWithoutRoles,
+  getAuthenticatedUserWithRoles,
+} from './users.testcases';
 
 describe('Users Update Api', () => {
   const baseSetup: BaseSetup = new BaseSetup();
@@ -10,14 +17,6 @@ describe('Users Update Api', () => {
   let prisma: PrismaService;
   let bcrypt: BcryptService;
   let jwt: JwtService;
-
-  const defaultUser = {
-    name: 'User Authenticated',
-    email: 'user@domain.com',
-    password: 'example',
-    isActive: true,
-    isAdmin: false,
-  };
 
   beforeAll(async () => {
     await baseSetup.beforeAll();
@@ -32,8 +31,13 @@ describe('Users Update Api', () => {
 
   describe(`/users/:id (PUT)`, () => {
     it('should return status code 403 when not send authorization code', async () => {
+      // Arrange
       const id = '19acb732-0afd-49d2-9db7-a43ae9120479';
+
+      // Act
       const result = await request.put(`/api/users/${id}`);
+
+      // Assert
       expect(result.statusCode).toBe(403);
       expect(result.body).toEqual({
         error: 'Forbidden',
@@ -43,18 +47,15 @@ describe('Users Update Api', () => {
     });
 
     it('should return status code 403 when user not have permission', async () => {
-      const user = await prisma.user.create({
-        data: {
-          ...defaultUser,
-          password: bcrypt.hash('example'),
-        },
-      });
-      const payload = { sub: user.id, email: user.email };
-      const accessToken = await jwt.signAsync(payload);
-      const headers = {
-        Authorization: `Bearer ${accessToken}`,
-      };
-      const result = await request.put(`/api/users/${user.id}`).set(headers);
+      // Arrange
+      const { headers, authenticatedUser } =
+        await getAuthenticatedUserWithoutRoles(prisma, bcrypt, jwt);
+      const { id } = authenticatedUser;
+
+      // Act
+      const result = await request.put(`/api/users/${id}`).set(headers);
+
+      // Assert
       expect(result.statusCode).toBe(403);
       expect(result.body).toEqual({
         error: 'Forbidden',
@@ -64,37 +65,27 @@ describe('Users Update Api', () => {
     });
 
     it('should return status code 400 when send wrong data', async () => {
-      const user = await prisma.user.create({
-        data: {
-          ...defaultUser,
-          password: bcrypt.hash('example'),
-          roles: {
-            create: {
-              name: 'users role',
-              description: 'users role',
-              permissions: {
-                create: {
-                  name: 'users:update',
-                  description: 'update users',
-                },
-              },
-            },
-          },
-        },
-      });
-      const payload = { sub: user.id, email: user.email };
-      const accessToken = await jwt.signAsync(payload);
-      const headers = {
-        Authorization: `Bearer ${accessToken}`,
-      };
+      // Arrange
+      const { headers, authenticatedUser } =
+        await getAuthenticatedUserWithRoles(
+          prisma,
+          bcrypt,
+          jwt,
+          'users:update',
+        );
       const body = {
         email: 'wrong-email',
         password: '123',
       };
+      const { id } = authenticatedUser;
+
+      // Act
       const result = await request
-        .put(`/api/users/${user.id}`)
+        .put(`/api/users/${id}`)
         .set(headers)
         .send(body);
+
+      // Assert
       expect(result.statusCode).toBe(400);
       expect(result.body).toEqual({
         error: 'Bad Request',
@@ -107,37 +98,25 @@ describe('Users Update Api', () => {
     });
 
     it('should return status code 404 when send wrong user id', async () => {
-      const user = await prisma.user.create({
-        data: {
-          ...defaultUser,
-          password: bcrypt.hash('example'),
-          roles: {
-            create: {
-              name: 'users role',
-              description: 'users role',
-              permissions: {
-                create: {
-                  name: 'users:update',
-                  description: 'update users',
-                },
-              },
-            },
-          },
-        },
-      });
-      const payload = { sub: user.id, email: user.email };
-      const accessToken = await jwt.signAsync(payload);
-      const headers = {
-        Authorization: `Bearer ${accessToken}`,
-      };
+      // Arrange
+      const { headers } = await getAuthenticatedUserWithRoles(
+        prisma,
+        bcrypt,
+        jwt,
+        'users:update',
+      );
       const body = {
         ...defaultUser,
       };
       const id = '19acb732-0afd-49d2-9db7-a43ae9120479';
+
+      // Act
       const result = await request
         .put(`/api/users/${id}`)
         .set(headers)
         .send(body);
+
+      // Assert
       expect(result.statusCode).toBe(404);
       expect(result.body).toEqual({
         error: 'Not Found',
@@ -147,45 +126,29 @@ describe('Users Update Api', () => {
     });
 
     it('should return status code 400 when send email that already exists', async () => {
+      // Arrange
+      const { headers } = await getAuthenticatedUserWithRoles(
+        prisma,
+        bcrypt,
+        jwt,
+        'users:update',
+      );
+      const { userCreated } = await createDefaultUserWithoutRole(
+        prisma,
+        bcrypt,
+      );
       const body = {
-        name: 'John Doe',
-        email: 'john.doe@domain.com',
-        password: 'example',
-        isActive: true,
-        isAdmin: false,
+        ...defaultAuthenticateUser,
       };
-      await prisma.user.create({
-        data: {
-          ...body,
-        },
-      });
-      const user = await prisma.user.create({
-        data: {
-          ...defaultUser,
-          password: bcrypt.hash('example'),
-          roles: {
-            create: {
-              name: 'users role',
-              description: 'users role',
-              permissions: {
-                create: {
-                  name: 'users:update',
-                  description: 'update users',
-                },
-              },
-            },
-          },
-        },
-      });
-      const payload = { sub: user.id, email: user.email };
-      const accessToken = await jwt.signAsync(payload);
-      const headers = {
-        Authorization: `Bearer ${accessToken}`,
-      };
+      const { id } = userCreated;
+
+      // Act
       const result = await request
-        .put(`/api/users/${user.id}`)
+        .put(`/api/users/${id}`)
         .set(headers)
         .send(body);
+
+      // Assert
       expect(result.statusCode).toBe(400);
       expect(result.body).toEqual({
         error: 'Bad Request',
@@ -195,49 +158,31 @@ describe('Users Update Api', () => {
     });
 
     it('should return status code 200 and update user', async () => {
+      // Arrange
+      const { headers, authenticatedUser } =
+        await getAuthenticatedUserWithRoles(
+          prisma,
+          bcrypt,
+          jwt,
+          'users:update',
+        );
       const body = {
-        name: 'John Doe',
-        email: 'john.doe@domain.com',
-        password: 'example',
-        isActive: true,
-        isAdmin: false,
+        ...defaultUser,
       };
-      const user = await prisma.user.create({
-        data: {
-          ...defaultUser,
-          password: bcrypt.hash('example'),
-          roles: {
-            create: {
-              name: 'users role',
-              description: 'users role',
-              permissions: {
-                create: {
-                  name: 'users:update',
-                  description: 'update users',
-                },
-              },
-            },
-          },
-        },
-      });
-      const payload = { sub: user.id, email: user.email };
-      const accessToken = await jwt.signAsync(payload);
-      const headers = {
-        Authorization: `Bearer ${accessToken}`,
-      };
+      const { id } = authenticatedUser;
       const result = await request
-        .put(`/api/users/${user.id}`)
+        .put(`/api/users/${id}`)
         .set(headers)
         .send(body);
       expect(result.statusCode).toBe(200);
       expect(result.body).toEqual(
         expect.objectContaining({
-          id: user.id,
+          id: authenticatedUser.id,
           name: body.name,
           email: body.email,
           isActive: body.isActive,
           isAdmin: body.isAdmin,
-          createdAt: user.createdAt.toISOString(),
+          createdAt: authenticatedUser.createdAt.toISOString(),
         }),
       );
     });

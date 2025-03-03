@@ -1,8 +1,15 @@
 import supertest from 'supertest';
+import { JwtService } from '@nestjs/jwt';
 import { BaseSetup } from '../base-setup';
 import { PrismaService } from '../../../src/config';
-import { JwtService } from '@nestjs/jwt';
 import { BcryptService } from '../../../src/common';
+import {
+  createDefaultUserWithoutRole,
+  createDefaultUserWithRole,
+  getAuthenticatedUserWithoutRoles,
+  getAuthenticatedUserWithRoles,
+} from './users.testcases';
+import { createDefaultRoleWithPermission } from '../roles/roles.testcases';
 
 describe('Users Roles Api', () => {
   const baseSetup: BaseSetup = new BaseSetup();
@@ -10,14 +17,6 @@ describe('Users Roles Api', () => {
   let prisma: PrismaService;
   let bcrypt: BcryptService;
   let jwt: JwtService;
-
-  const defaultUser = {
-    name: 'User Authenticated',
-    email: 'user@domain.com',
-    password: 'example',
-    isActive: true,
-    isAdmin: false,
-  };
 
   beforeAll(async () => {
     await baseSetup.beforeAll();
@@ -32,8 +31,13 @@ describe('Users Roles Api', () => {
 
   describe(`/users/:id/roles (PUT)`, () => {
     it('should return status code 403 when not send authorization code', async () => {
+      // Arrange
       const id = '19acb732-0afd-49d2-9db7-a43ae9120479';
+
+      // Act
       const result = await request.put(`/api/users/${id}/roles`);
+
+      // Assert
       expect(result.statusCode).toBe(403);
       expect(result.body).toEqual({
         error: 'Forbidden',
@@ -43,20 +47,15 @@ describe('Users Roles Api', () => {
     });
 
     it('should return status code 403 when user not have permission', async () => {
-      const user = await prisma.user.create({
-        data: {
-          ...defaultUser,
-          password: bcrypt.hash('example'),
-        },
-      });
-      const payload = { sub: user.id, email: user.email };
-      const accessToken = await jwt.signAsync(payload);
-      const headers = {
-        Authorization: `Bearer ${accessToken}`,
-      };
-      const result = await request
-        .put(`/api/users/${user.id}/roles`)
-        .set(headers);
+      // Arrange
+      const { headers, authenticatedUser } =
+        await getAuthenticatedUserWithoutRoles(prisma, bcrypt, jwt);
+      const { id } = authenticatedUser;
+
+      // Act
+      const result = await request.put(`/api/users/${id}/roles`).set(headers);
+
+      // Assert
       expect(result.statusCode).toBe(403);
       expect(result.body).toEqual({
         error: 'Forbidden',
@@ -66,34 +65,19 @@ describe('Users Roles Api', () => {
     });
 
     it('should return status code 400 when send missing data', async () => {
-      const user = await prisma.user.create({
-        data: {
-          ...defaultUser,
-          password: bcrypt.hash('example'),
-          roles: {
-            create: {
-              name: 'users role',
-              description: 'users role',
-              permissions: {
-                create: {
-                  name: 'users:roles',
-                  description: 'roles users',
-                },
-              },
-            },
-          },
-        },
-      });
-      const payload = { sub: user.id, email: user.email };
-      const accessToken = await jwt.signAsync(payload);
-      const headers = {
-        Authorization: `Bearer ${accessToken}`,
-      };
+      // Arrange
+      const { headers, authenticatedUser } =
+        await getAuthenticatedUserWithRoles(prisma, bcrypt, jwt, 'users:roles');
+      const { id } = authenticatedUser;
       const body = {};
+
+      // Act
       const result = await request
-        .put(`/api/users/${user.id}/roles`)
+        .put(`/api/users/${id}/roles`)
         .set(headers)
         .send(body);
+
+      // Assert
       expect(result.statusCode).toBe(400);
       expect(result.body).toEqual({
         error: 'Bad Request',
@@ -103,37 +87,25 @@ describe('Users Roles Api', () => {
     });
 
     it('should return status code 404 when user not found', async () => {
-      const user = await prisma.user.create({
-        data: {
-          ...defaultUser,
-          password: bcrypt.hash('example'),
-          roles: {
-            create: {
-              name: 'users role',
-              description: 'users role',
-              permissions: {
-                create: {
-                  name: 'users:roles',
-                  description: 'roles users',
-                },
-              },
-            },
-          },
-        },
-      });
-      const payload = { sub: user.id, email: user.email };
-      const accessToken = await jwt.signAsync(payload);
-      const headers = {
-        Authorization: `Bearer ${accessToken}`,
-      };
+      // Arrange
+      const { headers } = await getAuthenticatedUserWithRoles(
+        prisma,
+        bcrypt,
+        jwt,
+        'users:roles',
+      );
       const id = '19acb732-0afd-49d2-9db7-a43ae9120479';
       const body = {
         roles: [],
       };
+
+      // Act
       const result = await request
         .put(`/api/users/${id}/roles`)
         .set(headers)
         .send(body);
+
+      // Assert
       expect(result.statusCode).toBe(404);
       expect(result.body).toEqual({
         error: 'Not Found',
@@ -143,37 +115,21 @@ describe('Users Roles Api', () => {
     });
 
     it('should return status code 404 when role not found', async () => {
-      const user = await prisma.user.create({
-        data: {
-          ...defaultUser,
-          password: bcrypt.hash('example'),
-          roles: {
-            create: {
-              name: 'users role',
-              description: 'users role',
-              permissions: {
-                create: {
-                  name: 'users:roles',
-                  description: 'roles users',
-                },
-              },
-            },
-          },
-        },
-      });
-      const payload = { sub: user.id, email: user.email };
-      const accessToken = await jwt.signAsync(payload);
-      const headers = {
-        Authorization: `Bearer ${accessToken}`,
-      };
-      const id = user.id;
+      // Arrange
+      const { headers, authenticatedUser } =
+        await getAuthenticatedUserWithRoles(prisma, bcrypt, jwt, 'users:roles');
+      const id = authenticatedUser.id;
       const body = {
         roles: ['19acb732-0afd-49d2-9db7-a43ae9120479'],
       };
+
+      // Act
       const result = await request
         .put(`/api/users/${id}/roles`)
         .set(headers)
         .send(body);
+
+      // Assert
       expect(result.statusCode).toBe(404);
       expect(result.body).toEqual({
         error: 'Not Found',
@@ -183,74 +139,44 @@ describe('Users Roles Api', () => {
     });
 
     it('should return status code 200 and remove all user roles', async () => {
-      const user = await prisma.user.create({
-        data: {
-          name: 'John Doe',
-          email: 'john.doe@domain.com',
-          password: bcrypt.hash('example'),
-          isActive: true,
-          isAdmin: false,
-          roles: {
-            create: {
-              name: 'default role',
-              description: 'default role',
-              permissions: {
-                create: {
-                  name: 'users:list',
-                  description: 'list users',
-                },
-              },
-            },
-          },
-        },
-      });
-      const authenticatedUser = await prisma.user.create({
-        data: {
-          ...defaultUser,
-          password: bcrypt.hash('example'),
-          roles: {
-            create: {
-              name: 'users role',
-              description: 'users role',
-              permissions: {
-                create: {
-                  name: 'users:roles',
-                  description: 'roles users',
-                },
-              },
-            },
-          },
-        },
-      });
-      const payload = {
-        sub: authenticatedUser.id,
-        email: authenticatedUser.email,
-      };
-      const accessToken = await jwt.signAsync(payload);
-      const headers = {
-        Authorization: `Bearer ${accessToken}`,
-      };
-      const id = user.id;
+      // Arrange
+      const { userCreated } = await createDefaultUserWithRole(
+        prisma,
+        bcrypt,
+        'users:list',
+      );
+      const { headers } = await getAuthenticatedUserWithRoles(
+        prisma,
+        bcrypt,
+        jwt,
+        'users:roles',
+      );
+      const { id } = userCreated;
       const body = {
         roles: [],
       };
+
+      // Act
       const result = await request
         .put(`/api/users/${id}/roles`)
         .set(headers)
         .send(body);
+
+      // Assert
       expect(result.statusCode).toBe(200);
       expect(result.body).toEqual(
         expect.objectContaining({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          isActive: true,
-          isAdmin: false,
-          createdAt: user.createdAt.toISOString(),
+          id: userCreated.id,
+          name: userCreated.name,
+          email: userCreated.email,
+          isActive: userCreated.isActive,
+          isAdmin: userCreated.isAdmin,
+          createdAt: userCreated.createdAt.toISOString(),
           roles: [],
         }),
       );
 
+      // Check user roles in Database
       const checkUser = await prisma.user.findUnique({
         where: { id },
         include: { roles: true },
@@ -259,74 +185,47 @@ describe('Users Roles Api', () => {
     });
 
     it('should return status code 200 and connect user to role', async () => {
-      const role = await prisma.role.create({
-        data: {
-          name: 'role',
-          description: 'role description',
-          permissions: {
-            create: {
-              name: 'users:list',
-              description: 'list users',
-            },
-          },
-        },
-      });
-      const user = await prisma.user.create({
-        data: {
-          name: 'John Doe',
-          email: 'john.doe@domain.com',
-          password: bcrypt.hash('example'),
-          isActive: true,
-          isAdmin: false,
-        },
-      });
-      const authenticatedUser = await prisma.user.create({
-        data: {
-          ...defaultUser,
-          password: bcrypt.hash('example'),
-          roles: {
-            create: {
-              name: 'users role',
-              description: 'users role',
-              permissions: {
-                create: {
-                  name: 'users:roles',
-                  description: 'roles users',
-                },
-              },
-            },
-          },
-        },
-      });
-      const payload = {
-        sub: authenticatedUser.id,
-        email: authenticatedUser.email,
-      };
-      const accessToken = await jwt.signAsync(payload);
-      const headers = {
-        Authorization: `Bearer ${accessToken}`,
-      };
-      const id = user.id;
+      // Arrange
+      const { role } = await createDefaultRoleWithPermission(
+        prisma,
+        'users:list',
+      );
+      const { userCreated } = await createDefaultUserWithoutRole(
+        prisma,
+        bcrypt,
+      );
+      const { headers } = await getAuthenticatedUserWithRoles(
+        prisma,
+        bcrypt,
+        jwt,
+        'users:roles',
+      );
+      const { id } = userCreated;
       const body = {
         roles: [role.id],
       };
+
+      // Act
       const result = await request
         .put(`/api/users/${id}/roles`)
         .set(headers)
         .send(body);
+
+      // Assert
       expect(result.statusCode).toBe(200);
       expect(result.body).toEqual(
         expect.objectContaining({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          isActive: true,
-          isAdmin: false,
-          createdAt: user.createdAt.toISOString(),
+          id: userCreated.id,
+          name: userCreated.name,
+          email: userCreated.email,
+          isActive: userCreated.isActive,
+          isAdmin: userCreated.isAdmin,
+          createdAt: userCreated.createdAt.toISOString(),
           roles: [role.id],
         }),
       );
 
+      // Check user roles in Database
       const checkUser = await prisma.user.findUnique({
         where: { id },
         include: { roles: true },
@@ -335,86 +234,48 @@ describe('Users Roles Api', () => {
     });
 
     it('should return status code 200 and disconnect user from old roles and connect user to a new role', async () => {
-      const role = await prisma.role.create({
-        data: {
-          name: 'role',
-          description: 'role description',
-          permissions: {
-            create: {
-              name: 'users:list',
-              description: 'list users',
-            },
-          },
-        },
-      });
-      const user = await prisma.user.create({
-        data: {
-          name: 'John Doe',
-          email: 'john.doe@domain.com',
-          password: bcrypt.hash('example'),
-          isActive: true,
-          isAdmin: false,
-          roles: {
-            create: {
-              name: 'default role',
-              description: 'default role',
-              permissions: {
-                create: {
-                  name: 'users:read',
-                  description: 'read users',
-                },
-              },
-            },
-          },
-        },
-      });
-      const authenticatedUser = await prisma.user.create({
-        data: {
-          ...defaultUser,
-          password: bcrypt.hash('example'),
-          roles: {
-            create: {
-              name: 'users role',
-              description: 'users role',
-              permissions: {
-                create: {
-                  name: 'users:roles',
-                  description: 'roles users',
-                },
-              },
-            },
-          },
-        },
-      });
-      const payload = {
-        sub: authenticatedUser.id,
-        email: authenticatedUser.email,
-      };
-      const accessToken = await jwt.signAsync(payload);
-      const headers = {
-        Authorization: `Bearer ${accessToken}`,
-      };
-      const id = user.id;
+      // Arrange
+      const { role } = await createDefaultRoleWithPermission(
+        prisma,
+        'users:list',
+      );
+      const { userCreated } = await createDefaultUserWithRole(
+        prisma,
+        bcrypt,
+        'users:read',
+      );
+      const { headers } = await getAuthenticatedUserWithRoles(
+        prisma,
+        bcrypt,
+        jwt,
+        'users:roles',
+      );
+      const { id } = userCreated;
       const body = {
         roles: [role.id],
       };
+
+      // Act
       const result = await request
         .put(`/api/users/${id}/roles`)
         .set(headers)
         .send(body);
+
+      // Assert
       expect(result.statusCode).toBe(200);
       expect(result.body).toEqual(
         expect.objectContaining({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          isActive: true,
-          isAdmin: false,
-          createdAt: user.createdAt.toISOString(),
+          id: userCreated.id,
+          name: userCreated.name,
+          email: userCreated.email,
+          isActive: userCreated.isActive,
+          isAdmin: userCreated.isAdmin,
+          createdAt: userCreated.createdAt.toISOString(),
           roles: [role.id],
         }),
       );
 
+      // Check user roles in Database
       const checkUser = await prisma.user.findUnique({
         where: { id },
         include: { roles: true },

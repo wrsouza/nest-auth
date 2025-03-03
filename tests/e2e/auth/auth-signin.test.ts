@@ -2,6 +2,10 @@ import supertest from 'supertest';
 import { BaseSetup } from '../base-setup';
 import { PrismaService } from '../../../src/config';
 import { BcryptService } from '../../../src/common';
+import {
+  createDefaultUserWithoutRole,
+  defaultUser,
+} from '../users/users.testcases';
 
 describe('Auth Sign In API', () => {
   const baseSetup: BaseSetup = new BaseSetup();
@@ -21,8 +25,13 @@ describe('Auth Sign In API', () => {
 
   describe(`/auth (POST)`, () => {
     it('should return status code 400 when send empty body', async () => {
+      // Arrange
       const body = {};
+
+      // Act
       const result = await request.post('/api/auth').send(body);
+
+      // Assert
       expect(result.statusCode).toBe(400);
       expect(result.body).toEqual({
         error: 'Bad Request',
@@ -32,11 +41,16 @@ describe('Auth Sign In API', () => {
     });
 
     it('should return status code 400 when send credentials invalid', async () => {
+      // Arrange
       const body = {
         email: 'email@domain.com',
         password: 'example',
       };
+
+      // Act
       const result = await request.post('/api/auth').send(body);
+
+      // Assert
       expect(result.statusCode).toBe(400);
       expect(result.body).toEqual({
         error: 'Bad Request',
@@ -46,27 +60,27 @@ describe('Auth Sign In API', () => {
     });
 
     it('should return status code 200 when send credentials correctly', async () => {
-      const user = await prisma.user.create({
-        data: {
-          name: 'User test',
-          email: 'email@domain.com',
-          password: bcrypt.hash('example'),
-          isActive: true,
-          isAdmin: false,
-        },
-      });
+      // Arrange
+      const { userCreated } = await createDefaultUserWithoutRole(
+        prisma,
+        bcrypt,
+      );
       const body = {
-        email: 'email@domain.com',
-        password: 'example',
+        email: defaultUser.email,
+        password: defaultUser.password,
       };
+
+      // Act
       const result = await request.post('/api/auth').send(body);
+
+      // Assert
       expect(result.statusCode).toBe(200);
       expect(result.body).toHaveProperty('accessToken');
       expect(result.body).toEqual(
         expect.objectContaining({
-          id: user.id,
-          name: user.name,
-          email: user.email,
+          id: userCreated.id,
+          name: userCreated.name,
+          email: userCreated.email,
         }),
       );
     });
