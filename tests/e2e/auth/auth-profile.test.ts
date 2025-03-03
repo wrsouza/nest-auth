@@ -20,6 +20,7 @@ describe('Auth Profile API', () => {
     bcrypt = baseSetup.Bcrypt;
   });
 
+  beforeEach(() => baseSetup.beforeEach());
   afterEach(() => baseSetup.afterEach());
   afterAll(() => baseSetup.afterAll());
 

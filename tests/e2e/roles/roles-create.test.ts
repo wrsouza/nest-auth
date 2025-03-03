@@ -4,12 +4,11 @@ import { BaseSetup } from '../base-setup';
 import { PrismaService } from '../../../src/config';
 import { BcryptService } from '../../../src/common';
 import {
-  createDefaultUserWithoutRole,
   getAuthenticatedUserWithoutRoles,
   getAuthenticatedUserWithRoles,
-} from './users.testcases';
+} from '../users/users.testcases';
 
-describe('Users Delete Api', () => {
+describe('Roles Create Api', () => {
   const baseSetup: BaseSetup = new BaseSetup();
   let request: supertest.SuperAgentTest;
   let prisma: PrismaService;
@@ -28,13 +27,10 @@ describe('Users Delete Api', () => {
   afterEach(() => baseSetup.afterEach());
   afterAll(() => baseSetup.afterAll());
 
-  describe(`/users/:id (DELETE)`, () => {
+  describe(`/roles (POST)`, () => {
     it('should return status code 403 when not send authorization code', async () => {
-      // Arrange
-      const id = '19acb732-0afd-49d2-9db7-a43ae9120479';
-
       // Act
-      const result = await request.delete(`/api/users/${id}`).send({});
+      const result = await request.post('/api/roles').send({});
 
       // Assert
       expect(result.statusCode).toBe(403);
@@ -52,13 +48,9 @@ describe('Users Delete Api', () => {
         bcrypt,
         jwt,
       );
-      const id = '19acb732-0afd-49d2-9db7-a43ae9120479';
 
       // Act
-      const result = await request
-        .delete(`/api/users/${id}`)
-        .set(headers)
-        .send({});
+      const result = await request.post('/api/roles').set(headers).send({});
 
       // Assert
       expect(result.statusCode).toBe(403);
@@ -69,52 +61,31 @@ describe('Users Delete Api', () => {
       });
     });
 
-    it('should return status code 404 when send wrong user id', async () => {
+    it('should return status code 400 when send empty body', async () => {
       // Arrange
       const { headers } = await getAuthenticatedUserWithRoles(
         prisma,
         bcrypt,
         jwt,
-        'users:delete',
+        'roles:create',
       );
-      const id = '19acb732-0afd-49d2-9db7-a43ae9120479';
+      const body = {};
 
       // Act
-      const result = await request.delete(`/api/users/${id}`).set(headers);
+      const result = await request.post('/api/roles').set(headers).send(body);
 
       // Assert
-      expect(result.statusCode).toBe(404);
+      expect(result.statusCode).toBe(400);
       expect(result.body).toEqual({
-        error: 'Not Found',
-        message: 'User not found',
-        statusCode: 404,
+        error: 'Bad Request',
+        message: [
+          'name must be longer than or equal to 3 characters',
+          'name must be a string',
+          'description must be longer than or equal to 3 characters',
+          'description must be a string',
+        ],
+        statusCode: 400,
       });
-    });
-
-    it('should return status code 204 and delete a user', async () => {
-      // Arrange
-      const { userCreated } = await createDefaultUserWithoutRole(
-        prisma,
-        bcrypt,
-      );
-      const { headers } = await getAuthenticatedUserWithRoles(
-        prisma,
-        bcrypt,
-        jwt,
-        'users:delete',
-      );
-      const { id } = userCreated;
-
-      // Act
-      const result = await request.delete(`/api/users/${id}`).set(headers);
-
-      // Assert
-      expect(result.statusCode).toBe(204);
-      expect(result.body).toEqual({});
-
-      // Check in Database
-      const userDeleted = await prisma.user.findUnique({ where: { id } });
-      expect(userDeleted).toBeNull();
     });
   });
 });

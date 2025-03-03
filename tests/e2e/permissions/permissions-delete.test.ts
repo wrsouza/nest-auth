@@ -3,12 +3,10 @@ import { JwtService } from '@nestjs/jwt';
 import { BaseSetup } from '../base-setup';
 import { PrismaService } from '../../../src/config';
 import { BcryptService } from '../../../src/common';
-import {
-  getAuthenticatedUserWithoutRoles,
-  getAuthenticatedUserWithRoles,
-} from './users.testcases';
+import { getAuthenticatedUserWithoutRoles } from '../users/users.testcases';
+import { randomUUID } from 'node:crypto';
 
-describe('Users List Api', () => {
+describe('Permissions Delete Api', () => {
   const baseSetup: BaseSetup = new BaseSetup();
   let request: supertest.SuperAgentTest;
   let prisma: PrismaService;
@@ -27,10 +25,13 @@ describe('Users List Api', () => {
   afterEach(() => baseSetup.afterEach());
   afterAll(() => baseSetup.afterAll());
 
-  describe(`/users (GET)`, () => {
+  describe(`/permissions/:id (DELETE)`, () => {
     it('should return status code 403 when not send authorization code', async () => {
+      // Arrange
+      const id = randomUUID();
+
       // Act
-      const result = await request.get('/api/users');
+      const result = await request.delete(`/api/permissions/${id}`);
 
       // Assert
       expect(result.statusCode).toBe(403);
@@ -48,9 +49,12 @@ describe('Users List Api', () => {
         bcrypt,
         jwt,
       );
+      const id = randomUUID();
 
       // Act
-      const result = await request.get('/api/users').set(headers);
+      const result = await request
+        .delete(`/api/permissions/${id}`)
+        .set(headers);
 
       // Assert
       expect(result.statusCode).toBe(403);
@@ -59,29 +63,6 @@ describe('Users List Api', () => {
         message: 'Forbidden resource',
         statusCode: 403,
       });
-    });
-
-    it('should return status code 200 when authenticated user have the right permission', async () => {
-      // Arrange
-      const { headers, authenticatedUser } =
-        await getAuthenticatedUserWithRoles(prisma, bcrypt, jwt, 'users:list');
-
-      // Act
-      const result = await request.get('/api/users').set(headers);
-
-      // Assert
-      expect(result.statusCode).toBe(200);
-      expect(result.body).toEqual([
-        {
-          id: authenticatedUser.id,
-          name: authenticatedUser.name,
-          email: authenticatedUser.email,
-          isActive: authenticatedUser.isActive,
-          isAdmin: authenticatedUser.isAdmin,
-          createdAt: authenticatedUser.createdAt.toISOString(),
-          updatedAt: authenticatedUser.updatedAt.toISOString(),
-        },
-      ]);
     });
   });
 });

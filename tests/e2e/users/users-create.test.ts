@@ -25,6 +25,7 @@ describe('Users Create Api', () => {
     bcrypt = baseSetup.Bcrypt;
   });
 
+  beforeEach(() => baseSetup.beforeEach());
   afterEach(() => baseSetup.afterEach());
   afterAll(() => baseSetup.afterAll());
 

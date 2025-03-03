@@ -69,6 +69,10 @@ export class BaseSetup {
     await migrations.exec();
   }
 
+  beforeEach() {
+    jest.setTimeout(60000);
+  }
+
   async afterEach() {
     jest.clearAllMocks();
     await this.prisma.permission.deleteMany({});

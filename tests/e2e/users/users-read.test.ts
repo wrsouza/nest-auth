@@ -23,6 +23,7 @@ describe('Users Read Api', () => {
     bcrypt = baseSetup.Bcrypt;
   });
 
+  beforeEach(() => baseSetup.beforeEach());
   afterEach(() => baseSetup.afterEach());
   afterAll(() => baseSetup.afterAll());
 

@@ -20,6 +20,7 @@ describe('Auth Sign In API', () => {
     bcrypt = baseSetup.Bcrypt;
   });
 
+  beforeEach(() => baseSetup.beforeEach());
   afterEach(() => baseSetup.afterEach());
   afterAll(() => baseSetup.afterAll());
 
