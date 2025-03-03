@@ -30,11 +30,10 @@ jobs:
       - name: Run e2e tests
         run: npm run test:e2e
 
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v5
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # Generate this on SonarCloud.io
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: Create Coverage Badge
         uses: schneegans/dynamic-badges-action@v1.1.0
