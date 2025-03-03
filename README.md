@@ -83,3 +83,9 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+# Nest Auth
+
+A NestJS authentication system with role-based access control (RBAC).
+
+![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/${{ github.repository_owner }}/${{ secrets.GIST_ID }}/raw/coverage-badge.json)
