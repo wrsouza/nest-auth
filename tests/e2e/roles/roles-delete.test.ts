@@ -2,9 +2,13 @@ import supertest from 'supertest';
 import { JwtService } from '@nestjs/jwt';
 import { BaseSetup } from '../base-setup';
 import { PrismaService } from '../../../src/config';
-import { BcryptService } from '../../../src/common';
-import { getAuthenticatedUserWithoutRoles } from '../users/users.testcases';
+import { BcryptService, ResponseErrorEnum } from '../../../src/common';
+import {
+  getAuthenticatedUserWithoutRoles,
+  getAuthenticatedUserWithRoles,
+} from '../users/users.testcases';
 import { randomUUID } from 'node:crypto';
+import { createDefaultRoleWithoutPermission } from './roles.testcases';
 
 describe('Roles Delete Api', () => {
   const baseSetup: BaseSetup = new BaseSetup();
@@ -61,6 +65,53 @@ describe('Roles Delete Api', () => {
         message: 'Forbidden resource',
         statusCode: 403,
       });
+    });
+
+    it('should return status code 404 when send id is not exists', async () => {
+      // Arrange
+      const { headers } = await getAuthenticatedUserWithRoles(
+        prisma,
+        bcrypt,
+        jwt,
+        'roles:delete',
+      );
+      const id = randomUUID();
+
+      // Act
+      const result = await request.delete(`/api/roles/${id}`).set(headers);
+
+      // Assert
+      expect(result.statusCode).toBe(404);
+      expect(result.body).toEqual({
+        error: 'Not Found',
+        message: ResponseErrorEnum.ROLE_NOT_FOUND,
+        statusCode: 404,
+      });
+    });
+
+    it('should return status code 204 when send role id', async () => {
+      // Arrange
+      const { headers } = await getAuthenticatedUserWithRoles(
+        prisma,
+        bcrypt,
+        jwt,
+        'roles:delete',
+      );
+      const { role } = await createDefaultRoleWithoutPermission(prisma);
+      const { id } = role;
+
+      // Act
+      const result = await request.delete(`/api/roles/${id}`).set(headers);
+
+      // Assert
+      expect(result.statusCode).toBe(204);
+      expect(result.body).toEqual({});
+
+      // Check in Database
+      const roleDeleted = await prisma.role.findUnique({
+        where: { id },
+      });
+      expect(roleDeleted).toBeNull();
     });
   });
 });

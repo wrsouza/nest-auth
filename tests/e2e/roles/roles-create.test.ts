@@ -2,11 +2,15 @@ import supertest from 'supertest';
 import { JwtService } from '@nestjs/jwt';
 import { BaseSetup } from '../base-setup';
 import { PrismaService } from '../../../src/config';
-import { BcryptService } from '../../../src/common';
+import { BcryptService, ResponseErrorEnum } from '../../../src/common';
 import {
   getAuthenticatedUserWithoutRoles,
   getAuthenticatedUserWithRoles,
 } from '../users/users.testcases';
+import {
+  createDefaultRoleWithoutPermission,
+  defaultRole,
+} from './roles.testcases';
 
 describe('Roles Create Api', () => {
   const baseSetup: BaseSetup = new BaseSetup();
@@ -86,6 +90,69 @@ describe('Roles Create Api', () => {
         ],
         statusCode: 400,
       });
+    });
+
+    it('should return status code 400 when role name already exists', async () => {
+      // Arrange
+      const { headers } = await getAuthenticatedUserWithRoles(
+        prisma,
+        bcrypt,
+        jwt,
+        'roles:create',
+      );
+      await createDefaultRoleWithoutPermission(prisma);
+      const body = {
+        ...defaultRole,
+      };
+
+      // Act
+      const result = await request.post('/api/roles').set(headers).send(body);
+
+      // Assert
+      expect(result.statusCode).toBe(400);
+      expect(result.body).toEqual({
+        error: 'Bad Request',
+        message: ResponseErrorEnum.ROLE_ALREADY_EXISTS,
+        statusCode: 400,
+      });
+    });
+
+    it('should return status code 200 when role is created', async () => {
+      // Arrange
+      const { headers } = await getAuthenticatedUserWithRoles(
+        prisma,
+        bcrypt,
+        jwt,
+        'roles:create',
+      );
+      const body = {
+        ...defaultRole,
+      };
+
+      // Act
+      const result = await request.post('/api/roles').set(headers).send(body);
+
+      // Assert
+      expect(result.statusCode).toBe(201);
+      expect(result.body).toHaveProperty('id');
+      expect(result.body).toHaveProperty('createdAt');
+      expect(result.body).toHaveProperty('updatedAt');
+      expect(result.body).toEqual(
+        expect.objectContaining({
+          name: body.name,
+          description: body.description,
+        }),
+      );
+
+      // Check in Database
+      const { id } = result.body as { id: string };
+      const roleCreated = await prisma.role.findUniqueOrThrow({
+        where: {
+          id,
+        },
+      });
+      expect(roleCreated.name).toEqual(body.name);
+      expect(roleCreated.description).toEqual(body.description);
     });
   });
 });

@@ -229,7 +229,13 @@ describe('Users Roles Api', () => {
       // Check user roles in Database
       const checkUser = await prisma.user.findUnique({
         where: { id },
-        include: { roles: true },
+        include: {
+          roles: {
+            include: {
+              permissions: true,
+            },
+          },
+        },
       });
       expect(checkUser?.roles).toEqual([role]);
     });
@@ -279,7 +285,13 @@ describe('Users Roles Api', () => {
       // Check user roles in Database
       const checkUser = await prisma.user.findUnique({
         where: { id },
-        include: { roles: true },
+        include: {
+          roles: {
+            include: {
+              permissions: true,
+            },
+          },
+        },
       });
       expect(checkUser?.roles).toEqual([role]);
     });
