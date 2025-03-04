@@ -1,7 +1,7 @@
 -- CreateTable
 CREATE TABLE "_user_role" (
-    "A" VARCHAR(36) NOT NULL,
-    "B" VARCHAR(36) NOT NULL,
+    "A" UUID NOT NULL,
+    "B" UUID NOT NULL,
 
     CONSTRAINT "_user_role_AB_pkey" PRIMARY KEY ("A","B")
 );

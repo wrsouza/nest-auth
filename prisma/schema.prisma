@@ -15,7 +15,7 @@ datasource db {
 }
 
 model User {
-  id        String    @db.VarChar(36) @id @default(uuid())
+  id        String    @db.Uuid @id @default(uuid())
   name      String    @db.VarChar(100)
   email     String    @db.VarChar(255) @unique
   password  String    @db.VarChar(255)
@@ -28,7 +28,7 @@ model User {
 }
 
 model Permission {
-  id          String    @db.VarChar(36) @id @default(uuid())
+  id          String    @db.Uuid @id @default(uuid())
   name        String    @db.VarChar(50) @unique
   description String    @db.VarChar(255)
   createdAt   DateTime  @default(now())
@@ -38,7 +38,7 @@ model Permission {
 }
 
 model Role {
-  id          String    @db.VarChar(36) @id @default(uuid())
+  id          String    @db.Uuid @id @default(uuid())
   name        String    @db.VarChar(50) @unique
   description String    @db.VarChar(255)
   createdAt   DateTime  @default(now())
