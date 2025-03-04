@@ -3,9 +3,10 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - 'README.md'
-      - '*.yml'
+    paths:
+      - prisma/**
+      - src/**
+      - tests/**
 
 jobs:
   ci-tests:
