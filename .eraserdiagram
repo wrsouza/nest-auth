@@ -1,0 +1,43 @@
+entity-relationship-diagram
+
+permissions [icon: lock, color: red] {
+    id uuid pk
+    name string
+    description string
+    created_at datetime
+    updated_at datetime
+}
+
+_role_permission [icon: shuffle, color: orange] {
+    A uuid fk
+    B uuid fk
+}
+
+roles [icon: key, color: green] {
+    id uuid pk
+    name string
+    description string
+    created_at datetime
+    updated_at datetime
+}
+
+_user_role [icon: shuffle, color: orange] {
+    A uuid fk
+    B uuid fk
+}
+
+users [icon: user, color: blue] {
+  id uuid pk
+  name string
+  email string
+  password string
+  is_admin boolean
+  is_active boolean
+  created_at datetime
+  updated_at datetime
+}
+
+_user_role.A <> roles.id
+_user_role.B <> users.id
+_role_permission.A <> permissions.id
+_role_permission.B <> roles.id

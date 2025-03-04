@@ -32,13 +32,13 @@ jobs:
           TOKENS=($SUMMARY)
           echo "COVERAGE=$(echo ${TOKENS[2]})" >> $GITHUB_ENV
 
+      - name: Run e2e tests
+        run: npm run test:e2e
+
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-      - name: Run e2e tests
-        run: npm run test:e2e
 
       - name: Create Coverage Badge
         uses: schneegans/dynamic-badges-action@v1.1.0
