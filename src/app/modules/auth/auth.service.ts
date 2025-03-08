@@ -1,7 +1,12 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { UserRepository } from '../../repositories';
 import { BcryptService } from '../../../common/bcrypt/bcrypt.service';
-import { AuthSignInDto, AuthResponseDto, AuthPayloadUserDto } from './dto';
+import {
+  AuthSignInDto,
+  AuthResponseDto,
+  AuthPayloadUserDto,
+  ProfileResponseDto,
+} from './dto';
 import { ResponseErrorEnum } from '../../../common/enums/response-error.enum';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
@@ -38,5 +43,11 @@ export class AuthService {
     if (!isValid) {
       throw new BadRequestException(ResponseErrorEnum.AUTH_INVALID);
     }
+  }
+
+  async refreshToken(user: ProfileResponseDto): Promise<AuthResponseDto> {
+    const payload: AuthPayloadUserDto = { sub: user.id, email: user.email };
+    const accessToken = await this.jwt.signAsync(payload);
+    return new AuthResponseDto(user as unknown as User, accessToken);
   }
 }

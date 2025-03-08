@@ -6,6 +6,7 @@ import { AuthService } from '../../../../../src/app/modules/auth/auth.service';
 import { BadRequestException } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthResponseDto } from '../../../../../src/app/modules/auth/dto';
+import { ProfileResponseDto } from '../../../../../src/app/modules/auth/dto';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -250,6 +251,40 @@ describe('AuthService', () => {
       }
       expect(compareSpy).toHaveBeenCalledTimes(1);
       expect(compareSpy).toHaveBeenCalledWith(password, hashPassword);
+    });
+  });
+
+  describe('refreshToken', () => {
+    it('should return a new access token when user is valid', async () => {
+      // Arrange
+      const user = {
+        id: defaultUser.id,
+        name: defaultUser.name,
+        email: defaultUser.email,
+        isAdmin: defaultUser.isAdmin,
+        roles: [],
+      } as ProfileResponseDto;
+
+      const expectedPayload = {
+        id: defaultUser.id,
+        name: defaultUser.name,
+        email: defaultUser.email,
+        accessToken: 'new-access-token',
+      } as AuthResponseDto;
+
+      const jwtSignSpy = jest
+        .spyOn(jwt, 'signAsync')
+        .mockResolvedValueOnce('new-access-token');
+
+      // Act
+      const result = await service.refreshToken(user);
+
+      // Assert
+      expect(result).toEqual(expectedPayload);
+      expect(jwtSignSpy).toHaveBeenCalledWith({
+        sub: user.id,
+        email: user.email,
+      });
     });
   });
 });

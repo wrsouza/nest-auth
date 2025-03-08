@@ -50,4 +50,17 @@ export class AuthController {
   async signIn(@Body() body: AuthSignInDto): Promise<AuthResponseDto> {
     return this.authService.signIn(body);
   }
+
+  @Post('refresh')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Refresh access token' })
+  @ApiResponse({ status: 200, type: AuthResponseDto })
+  @ApiBadRequestResponse({ description: 'Validation Error' })
+  @ApiForbiddenResponse({ description: 'Forbidden Error' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  async refreshToken(@Request() req: AuthRequestDto): Promise<AuthResponseDto> {
+    return this.authService.refreshToken(req.user);
+  }
 }

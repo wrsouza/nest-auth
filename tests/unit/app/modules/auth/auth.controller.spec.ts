@@ -22,6 +22,7 @@ describe('AuthController', () => {
           provide: AuthService,
           useValue: {
             signIn: jest.fn(),
+            refreshToken: jest.fn(),
           },
         },
         {
@@ -89,6 +90,40 @@ describe('AuthController', () => {
       // Assert
       expect(result).toEqual(expectedPayload);
       expect(signInSpy).toHaveBeenCalledWith(payload);
+    });
+  });
+
+  describe('refreshToken', () => {
+    it('should call refreshToken method from service and return new access token', async () => {
+      // Arrange
+      const user = {
+        id: 'user-id',
+        name: 'John Doe',
+        email: 'john@example.com',
+        isAdmin: false,
+      } as ProfileResponseDto;
+
+      const expectedPayload = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        accessToken: 'new-access-token',
+      } as AuthResponseDto;
+
+      const req = {
+        user,
+      } as AuthRequestDto;
+
+      const refreshTokenSpy = jest
+        .spyOn(service, 'refreshToken')
+        .mockResolvedValueOnce(expectedPayload);
+
+      // Act
+      const result = await controller.refreshToken(req);
+
+      // Assert
+      expect(result).toEqual(expectedPayload);
+      expect(refreshTokenSpy).toHaveBeenCalledWith(user);
     });
   });
 });
