@@ -9,6 +9,7 @@ import {
 } from './app/modules';
 import { GlobalJwtModule } from './common';
 import { DatabaseModule } from './config';
+import { OrdersModule } from './app/modules/orders/orders.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { DatabaseModule } from './config';
     UsersModule,
     RolesModule,
     PermissionsModule,
+    OrdersModule,
   ],
 })
 export class AppModule {}
