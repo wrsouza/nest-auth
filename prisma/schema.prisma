@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
 }
 
@@ -15,35 +15,76 @@ datasource db {
 }
 
 model User {
-  id        String    @db.Uuid @id @default(uuid())
-  name      String    @db.VarChar(100)
-  email     String    @db.VarChar(255) @unique
-  password  String    @db.VarChar(255)
-  isAdmin   Boolean   @map("is_admin")
-  isActive  Boolean   @map("is_active")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  roles     Role[] @relation("user_role")
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(100)
+  email     String   @unique @db.VarChar(255)
+  password  String   @db.VarChar(255)
+  isAdmin   Boolean  @map("is_admin")
+  isActive  Boolean  @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  roles     Role[]   @relation("user_role")
+  orders    Order[]
+
   @@map("users")
 }
 
 model Permission {
-  id          String    @db.Uuid @id @default(uuid())
-  name        String    @db.VarChar(50) @unique
-  description String    @db.VarChar(255)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  roles       Role[] @relation("role_permission")
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique @db.VarChar(50)
+  description String   @db.VarChar(255)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  roles       Role[]   @relation("role_permission")
+
   @@map("permissions")
 }
 
 model Role {
-  id          String    @db.Uuid @id @default(uuid())
-  name        String    @db.VarChar(50) @unique
-  description String    @db.VarChar(255)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id          String       @id @default(uuid()) @db.Uuid
+  name        String       @unique @db.VarChar(50)
+  description String       @db.VarChar(255)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
   permissions Permission[] @relation("role_permission")
-  users       User[] @relation("user_role")
+  users       User[]       @relation("user_role")
+
   @@map("roles")
+}
+
+model Order {
+  id            String        @id @default(uuid()) @db.Uuid
+  userId        String        @map("user_id") @db.Uuid
+  user          User          @relation(fields: [userId], references: [id])
+  total         Decimal       @db.Decimal(10, 2)
+  paymentType   String        @map("payment_type") @db.VarChar(20)
+  paymentStatus PaymentStatus @default(PENDING) @map("payment_status")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  items         OrderItem[]
+
+  @@map("orders")
+}
+
+enum PaymentStatus {
+  PENDING   @map("pending")
+  PAID      @map("paid")
+  PARTIAL   @map("partial")
+  CANCELLED @map("cancelled")
+
+  @@map("payment_status")
+}
+
+model OrderItem {
+  id         String   @id @default(uuid()) @db.Uuid
+  orderId    String   @map("order_id") @db.Uuid
+  order      Order    @relation(fields: [orderId], references: [id])
+  productId  String   @map("product_id") @db.VarChar(20)
+  productSku String   @map("product_sku") @db.VarChar(20)
+  quantity   Int
+  price      Decimal  @db.Decimal(10, 2)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("order_items")
 }

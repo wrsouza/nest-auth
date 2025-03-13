@@ -37,7 +37,31 @@ users [icon: user, color: blue] {
   updated_at datetime
 }
 
+orders [icon: shopping-bag, color: purple] {
+    id uuid pk
+    user_id uuid fk
+    total decimal
+    payment_type string
+    payment_status enum
+    created_at datetime
+    updated_at datetime
+}
+
+order_items [icon: bar-chart, color: orange] {
+    id uuid pk
+    order_id uuid fk
+    product_id string
+    product_sku string
+    quantity int
+    price decimal
+    created_at datetime
+    updated_at datetime
+}
+
 _user_role.A <> roles.id
 _user_role.B <> users.id
 _role_permission.A <> permissions.id
 _role_permission.B <> roles.id
+
+users.id <> orders.user_id
+orders.id <> order_items.order_id
