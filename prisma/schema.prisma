@@ -52,6 +52,15 @@ model Role {
   @@map("roles")
 }
 
+enum PaymentStatus {
+  PENDING   @map("pending")
+  PAID      @map("paid")
+  PARTIAL   @map("partial")
+  CANCELLED @map("cancelled")
+
+  @@map("payment_status")
+}
+
 model Order {
   id            String        @id @default(uuid()) @db.Uuid
   userId        String        @map("user_id") @db.Uuid
@@ -64,15 +73,6 @@ model Order {
   items         OrderItem[]
 
   @@map("orders")
-}
-
-enum PaymentStatus {
-  PENDING   @map("pending")
-  PAID      @map("paid")
-  PARTIAL   @map("partial")
-  CANCELLED @map("cancelled")
-
-  @@map("payment_status")
 }
 
 model OrderItem {
